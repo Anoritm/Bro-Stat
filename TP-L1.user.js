@@ -100,7 +100,7 @@ let _saved = null;
 
   const _w = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
 
-    S.calcTime = (L) => {
+  S.calcTime = (L) => {
     S.Force_MS = (CONFIG.周期类型 === 'M' ? Date.UTC(new Date(L).getUTCFullYear(), new Date(L).getUTCMonth() + (L >= Date.UTC(new Date(L).getUTCFullYear(), new Date(L).getUTCMonth(), CONFIG.周_天设置) ? 1 : 0), CONFIG.周_天设置) : (CONFIG.周期类型 === 'W' ? Date.UTC(new Date(L).getUTCFullYear(), new Date(L).getUTCMonth(), new Date(L).getUTCDate()) + ((CONFIG.周_天设置 - new Date(L).getUTCDay() > 0 ? CONFIG.周_天设置 - new Date(L).getUTCDay() : CONFIG.周_天设置 - new Date(L).getUTCDay() + 7) * 86400000) : (CONFIG.周期类型 === 'D' ? Date.parse(CONFIG.基准日期 + 'T00:00:00Z') + (Math.floor((L - Date.parse(CONFIG.基准日期 + 'T00:00:00Z')) / (CONFIG.周_天设置 * 86400000)) + 1) * CONFIG.周_天设置 * 86400000 : Infinity))) - CONFIG.时区补偿;
     S.Warn_MS = S.Force_MS + CONFIG.报告时间 * 60000;
     S.Force_MS += CONFIG.自动导出 * 60000;
@@ -286,7 +286,7 @@ async function rSD() {
       }
       else if (wanValid && (cWU !== S.wInstUp || cWD !== S.wInstDn)) {
         const wDt = wanNow - S.wLT;
-                if (S.wInstUp > 0) { S.wTotUp += (S.wInstUp + cWU) * wDt * 0.0005; }
+        if (S.wInstUp > 0) { S.wTotUp += (S.wInstUp + cWU) * wDt * 0.0005; }
         else if (cWU > 0) { const wEU = cWU * 0.5 * CONFIG.wanRefreshInterval; S.wTotUp += wEU; S.wZEU = (S.wZEU || 0) + wEU; S.wZEUC = (S.wZEUC || 0) + 1; }
         if (S.wInstDn > 0) { S.wTotDn += (S.wInstDn + cWD) * wDt * 0.0005; }
         else if (cWD > 0) { const wED = cWD * 0.5 * CONFIG.wanRefreshInterval; S.wTotDn += wED; S.wZED = (S.wZED || 0) + wED; S.wZEDC = (S.wZEDC || 0) + 1; }
@@ -377,7 +377,8 @@ async function rSD() {
     }
 
   function buildCSV() {
-            const csvQ = s => `"${s.replaceAll('"', '""')}"`; // RFC 4180：字段整体加引号，内部双引号翻倍
+    const 读档说明 = ' （含本地历史读档）';
+    const csvQ = s => `"${s.replaceAll('"', '""')}"`; // RFC 4180：字段整体加引号，内部双引号翻倍
     const csvE = v => {
       let s = String(v ?? '');
       if (typeof v === 'string' && /^(?:\s*[=+\-@＝＋－＠]|[\t\r\n])/.test(s)) s = "'" + s; // 防表格公式注入
@@ -387,7 +388,7 @@ async function rSD() {
     const csvRowT = a => a.map(v => csvQ(String(v ?? ''))).join(','); // 仅限脚本自带可信常量
     return ((sp, now, start) => '\uFEFF' + [
       csvRow([`哥哥科技 硬路由 NPU 增强系列：专用组件 ${版本号} 生成`]),
-      csvRow([`统计周期：${new Date(start + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} 至 ${new Date(now + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} (UTC${CONFIG.时区补偿 > 0 ? '+' : ''}${CONFIG.时区补偿 / 3600000})${CONFIG.readSaveData === 1 ? ' （含本地历史读档）' : ''}`]),
+      csvRow([`统计周期：${new Date(start + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} 至 ${new Date(now + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} (UTC${CONFIG.时区补偿 > 0 ? '+' : ''}${CONFIG.时区补偿 / 3600000})${CONFIG.readSaveData === 1 ? 读档说明 : ''}`]),
       csvRowT(['--- [全局统计] ---']),
       csvRow(['WAN总上传(bit)','WAN总下载(b)','高精全局上行(b)','高精全局下行(b)','LAN积分总上行(b)','LAN积分总下行(b)','本次在线总上行(b)','本次在线总下行(b)']),
       csvRow([Math.round(sp.global?.wan_up||0),Math.round(sp.global?.wan_down||0),Math.round(sp.global?.lan_high_up||0),Math.round(sp.global?.lan_high_down||0),Math.round(sp.global?.lan_integral_up||0),Math.round(sp.global?.lan_integral_down||0),Math.round(sp.global?.lan_off_up||0),Math.round(sp.global?.lan_off_down||0)]),
@@ -406,22 +407,22 @@ async function rSD() {
     );
   }
 function doSettle(nowMs) {
-        S._RST = !0; // 防重入锁
+    S._RST = !0; // 防重入锁
     let csv = buildCSV(), a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8;'})); a.download = `哥哥科技_路由器统计数据导出_${new Date(nowMs + CONFIG.时区补偿).toISOString().slice(2, 19).replace(/[-:]/g, '').replace('T', '_')}_${nowMs}.csv`; a.click(); // 文件
     let w = window.open('about:blank', '_blank');
     if (w) { w.document.write(`<!DOCTYPE html><html><head><title>流量结算备份</title></head><body style="background:#f3f4f5;font-family:system-ui,sans-serif;padding:40px 20px;color:#333;"><div style="background:#fff;padding:30px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.05);max-width:850px;margin:0 auto;"><h2 style="color:#0059fa;margin-top:0;border-bottom:2px solid #f0f0f0;padding-bottom:15px;">本次数据结算周期已结束</h2><p style="font-size:14px;line-height:1.7;color:#555;"><b>哥哥科技提示您：</b>请点击下方下载按钮将 CSV 报表保存到本地。<br>若下载失败，请点击复制按钮，新建文本文档粘贴后将拓展名改为 .csv 即可。</p><button id="dl-btn" style="background:#0059fa;color:#fff;border:none;padding:12px 24px;border-radius:6px;font-weight:bold;cursor:pointer;margin-right:10px;">📥 再次下载 CSV</button><button id="cp-btn" style="background:#4caf50;color:#fff;border:none;padding:12px 24px;border-radius:6px;font-weight:bold;cursor:pointer;">📋 一键复制内容</button><div style="background:#282c34;color:#abb2bf;padding:15px;border-radius:8px;overflow-x:auto;margin-top:20px;"><pre id="csv-data" style="margin:0;font-size:13px;line-height:1.5;"></pre></div></div><script>document.getElementById('dl-btn').onclick=function(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([document.getElementById('csv-data').textContent],{type:'text/csv;charset=utf-8;'}));a.download='哥哥科技_路由器统计数据补下_${nowMs}.csv';a.click();};document.getElementById('cp-btn').onclick=function(){let t=document.createElement('textarea');t.value=document.getElementById('csv-data').textContent;document.body.appendChild(t);t.select();try{document.execCommand('copy');alert('复制成功！');}catch(e){alert('复制失败，请手动全选复制');}document.body.removeChild(t);};</script></body></html>`); w.document.getElementById('csv-data').textContent = csv; }
     GM_setValue('gege_reset_ms', nowMs);
-    GM_setValue('ha_snapshot', { timestamp: nowMs, global: {}, devices: {} }); _saved = null; S.cSnap = null;
-        S.wTotUp = S.wTotDn = S.w2TotUp = S.w2TotDn = 0; // 内存原地清零
-    for (let k in S.cls) { let s = S.cls[k]; s.intUp = s.intDn = 0; s.uB = s.oU = s.lU; s.dB = s.oD = s.lD; s.hU.fill(0); s.hD.fill(0); } // 内存原地清零底表
-        document.getElementById('gb-w-bnr')?.remove(); // 预警横幅
+    document.getElementById('gb-w-bnr')?.remove(); // 预警横幅
     S.calcTime(Math.max(nowMs, S.Force_MS - CONFIG.自动导出 * 60000 + 1000) + CONFIG.时区补偿); // 瞬间算出下月/下周新线
     window.gegeForceUIRedraw = !0; // 重绘 UI
     setTimeout(() => { S._RST = !1; }, 2000); // 解开安全锁
+    GM_setValue('ha_snapshot', { timestamp: nowMs, global: {}, devices: {} }); _saved = null; S.cSnap = null;
+        S.wTotUp = S.wTotDn = S.w2TotUp = S.w2TotDn = 0; // 内存原地清零
+    for (let k in S.cls) { let s = S.cls[k]; s.intUp = s.intDn = 0; s.uB = s.oU = s.lU; s.dB = s.oD = s.lD; s.hU.fill(0); s.hD.fill(0); } // 内存原地清零底表
   }
 
-const calcStageRatio = (W, L_int, L_hp) => {
+  const calcStageRatio = (W, L_int, L_hp) => {
     if (W === 0) return 1.0;
     let L_max = Math.max(L_int, L_hp);
     let L_min = Math.min(L_int, L_hp);
@@ -445,7 +446,7 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
         return s;
       }
 
-            function 记总速率图(u, d) {
+      function 记总速率图(u, d) {
         u = u || 0; d = d || 0;
         const i = S.总图点数 & 8191;
         S.总上行图[i] = u; S.总下行图[i] = d; S.总图点数++;
@@ -606,7 +607,8 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
               bn.innerHTML = `<span> 统计周期即将结束，流量将在跨越边界时自动清零备份。</span><button id="gb-f-btn" style="background:#ffc107;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-weight:bold;color:#333;">立即导出并清零</button>`;
               bd.insertBefore(bn, bd.firstChild);
               document.getElementById('gb-f-btn').onclick = () => doSettle(Date.now());}
-          }}
+          }
+        }
       }
       S.aWu = (S.wTotUp - (S.lwTU || S.wTotUp)) / (CONFIG.wanRefreshInterval << 2); S.lwTU = S.wTotUp;
       S.aWd = (S.wTotDn - (S.lwTD || S.wTotDn)) / (CONFIG.wanRefreshInterval << 2); S.lwTD = S.wTotDn;
@@ -623,7 +625,7 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
     if (!bd) {
       bd = document.createElement('div');
       bd.id = 'zte-geek-board';
- let layoutHtml = '';
+        let layoutHtml = '';
         if (CONFIG.uiLayout === 1) { // 紧凑版 (驾驶舱)
             layoutHtml = `
                 <div class="geek-row"><span class="geek-label">WAN口速率</span><div class="geek-val-box" style="position:relative;"><span class="c-up geek-fixed-width" id="gb-wan-up-bytes"></span><span class="c-down geek-fixed-width" id="gb-wan-down-bytes"></span><span style="margin-left: 5px;"><span class="c-up" id="gb-wan-up-bps"></span> | <span class="c-down" id="gb-wan-down-bps"></span></span><span id="gb-pwan-vol-container" style="display:none; position:absolute; left:clamp(450px, 60%, 700px); color:#333; font-weight:bold; white-space:nowrap;">副WAN总：<span class="c-up" id="gb-pwan-tot-up"></span> | <span class="c-down" id="gb-pwan-tot-down"></span></span></div><div class="geek-right-box" style="font-weight: normal; color: #666;"><span style="color: #333;">0估算：</span><span id="gb-wan-zero-up"></span>，<span id="gb-wan-zero-down"></span>｜<span id="gb-wan-zero-up-cnt"></span>，<span id="gb-wan-zero-down-cnt"></span></div></div>
@@ -641,7 +643,7 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
         <div class="geek-row"><span class="geek-label">局域网代数和</span><div class="geek-val-box"><span class="c-up geek-fixed-width" id="gb-lan-up-bytes"></span><span class="c-down geek-fixed-width" id="gb-lan-down-bytes"></span><span id="gb-pwan-bps-container" style="display:none; margin-left: 5px;"><span class="c-up" id="gb-pwan-bps-up"></span> | <span class="c-down" id="gb-pwan-bps-down"></span></span></div><div class="geek-right-box">实时占比：<span class="c-up" id="gb-perc-up"></span> | <span class="c-down" id="gb-perc-down"></span></div></div>
         <div class="geek-row"><span class="geek-label">LAN：<span id="gege-pin-btn" class="gege-pin" title="冻结窗格">📌</span></span><div class="geek-val-box"><span class="c-up geek-fixed-width" id="gb-lan-up-vol"></span><span class="c-down geek-fixed-width" id="gb-lan-down-vol"></span></div><div class="geek-right-box">WAN：<span class="c-up" id="gb-wan-up-vol"></span> | <span class="c-down" id="gb-wan-down-vol"></span></div></div>`;
 }
-                bd.innerHTML = layoutHtml;
+        bd.innerHTML = layoutHtml;
         let pinBtn = bd.querySelector('#gege-pin-btn');
         if (pinBtn) {
             if (S.isPinned) {
@@ -762,7 +764,9 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
             tCol = bR > CONFIG.ratioThreshold ? '#ff4c00' : '#0059fa';
             tC = bR.toFixed(1) + '%';
           }
-          (cache.rBoxPort ??= rB.querySelector('.v-port')).textContent = CONFIG.portMap[cC.iface] || cC.iface || "未知";
+          let pNm = CONFIG.portMap[cC.iface] || cC.iface || "未知";
+          if (cC.iface === 'wl1' && S.is5G_149) pNm = "5.8G";
+          (cache.rBoxPort ??= rB.querySelector('.v-port')).textContent = pNm;
                     (cache.rBoxUp ??= rB.querySelector('.v-interval .c-up')).textContent = '' + fSV(hqU);
           (cache.rBoxDn ??= rB.querySelector('.v-interval .c-down')).textContent = '' + fSV(hqD);
           const rtP = cache.rtPct ??= rB.querySelector('.v-rt-pct');
@@ -825,12 +829,6 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
               bU = cache.bU ??= enh.querySelector('.zte-bar-up'),
               bD = cache.bD ??= enh.querySelector('.zte-bar-down');
           
-          let clU = (S.aWu * 0.1) || 0; if (clU < 512000) clU = 512000;
-          let clD = (S.aWd * 0.125) || 0;
-          for (let i = 0; i < 128; i++) { if (cS.hU[i] > clU) clU = cS.hU[i]; if (cS.hD[i] > clD) clD = cS.hD[i]; }
-          (cache.bUSpk ??= bU.querySelector('.v-spark')).textContent = getSpark(cS.hU, cS.hIdx, clU);
-          (cache.bDSpk ??= bD.querySelector('.v-spark')).textContent = getSpark(cS.hD, cS.hIdx, clD);
-
           bU.style.setProperty('--p-up', Math.min(pu, 100) + '%');
           (cache.bUVal ??= bU.querySelector('.v-val')).textContent = `🔼 ${fBy(cC.upRate)}`;
           (cache.bUPct ??= bU.querySelector('.v-pct')).textContent = pu.toFixed(1) + '%';
@@ -838,6 +836,11 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
           bD.style.setProperty('--p-down', Math.min(pd, 100) + '%');
           (cache.bDVal ??= bD.querySelector('.v-val')).textContent = `🔽 ${fBy(cC.dnRate)}`;
           (cache.bDPct ??= bD.querySelector('.v-pct')).textContent = pd.toFixed(1) + '%';
+          let clU = (S.aWu * 0.1) || 0; if (clU < 512000) clU = 512000;
+          let clD = (S.aWd * 0.125) || 0;
+          for (let i = 0; i < 128; i++) { if (cS.hU[i] > clU) clU = cS.hU[i]; if (cS.hD[i] > clD) clD = cS.hD[i]; }
+          (cache.bUSpk ??= bU.querySelector('.v-spark')).textContent = getSpark(cS.hU, cS.hIdx, clU);
+          (cache.bDSpk ??= bD.querySelector('.v-spark')).textContent = getSpark(cS.hD, cS.hIdx, clD);
         }
       }
     });

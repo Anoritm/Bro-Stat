@@ -1,4 +1,4 @@
-                bd.innerHTML = layoutHtml;
+bd.innerHTML = layoutHtml;
         let pinBtn = bd.querySelector('#gege-pin-btn');
         if (pinBtn) {
             if (S.isPinned) {

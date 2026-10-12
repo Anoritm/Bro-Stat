@@ -292,24 +292,15 @@ let _saved = null;
   function 格式化包比(r) { return r === Infinity ? '∞' : (!r || r < 0 ? '0%' : (r < 1e-3 ? `${短数(r * 1e4)}/万` : (r < 10 ? `${短数(r * 100)}%` : `${短数(r)}倍`))); }
   function 取网口图标(速率) {
     let s = +速率 || 0;
-    if (s >= 2500) return /* @BroTech-Reserved icon-wired-default-svg.part.js */;
+    if (s >= 2500) return `<svg viewBox="0 0 100 100" width="45" height="45"><rect x="15" y="15" width="70" height="65" rx="5" fill="#cfd8dc" stroke="#90a4ae" stroke-width="4"/><path d="M 25,25 L 75,25 L 75,60 L 60,60 L 60,75 L 40,75 L 40,60 L 25,60 Z" fill="#263238"/><g fill="#ffca28"><rect x="30" y="25" width="2.5" height="18"/><rect x="35" y="25" width="2.5" height="18"/><rect x="40" y="25" width="2.5" height="18"/><rect x="45" y="25" width="2.5" height="18"/><rect x="52.5" y="25" width="2.5" height="18"/><rect x="57.5" y="25" width="2.5" height="18"/><rect x="62.5" y="25" width="2.5" height="18"/><rect x="67.5" y="25" width="2.5" height="18"/></g><circle cx="21" cy="73" r="3.5" fill="#4caf50"/><circle cx="79" cy="73" r="3.5" fill="#ffb300"/></svg>`;
     let c = s >= 1000 ? '#4CAF50' : s >= 100 ? '#5394CC' : s > 0 ? '#E7B05C' : '#7b8aa0';
-    return /* @BroTech-Reserved icon-wired-active-svg.part.js */;
+    return `<svg viewBox="0 0 100 100" width="45" height="45" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(180 50 50)"><path d="M18 82V36Q18 32 22 32H28V24Q28 20 32 20H38V14Q38 10 42 10H58Q62 10 62 14V20H68Q72 20 72 24V32H78Q82 32 82 36V82Q82 86 78 86H22Q18 86 18 82Z" fill="${c}" fill-opacity=".10" stroke="${c}" stroke-width="4" stroke-linejoin="round"/><g stroke="${c}" stroke-width="3.2" stroke-linecap="round"><path d="M31 54V76"/><path d="M36.5 54V76"/><path d="M42 54V76"/><path d="M47.5 54V76"/><path d="M53 54V76"/><path d="M58.5 54V76"/><path d="M64 54V76"/><path d="M69.5 54V76"/></g></g></svg>`;
   }
+  const 信号档位 = [-40, -46, -50, -56, -61, -67, -72, -76, -80, -85];
   function 取设备图标(信号, 有线, 速率 = 0) {
     if (有线) return 取网口图标(速率);
     let r = 信号 | 0, c = r > -24 ? '#4caf50' : r > -35 ? '#9c27b0' : '#0059fa';
-    if (r > -40) return `<svg viewBox="0 0 100 100" width="45" height="45"><path d="M 50,85 L 10,35 A 65,65 0 0,1 90,35 Z" fill="${c}"/></svg>`;
-    if (r > -46) return /* @BroTech-Reserved icon-wifi-high-svg.part.js */;
-    if (r > -50) return /* @BroTech-Reserved icon-wifi-good-svg.part.js */;
-    if (r > -56) return /* @BroTech-Reserved icon-wifi-three-ring-svg.part.js */;
-    if (r > -61) return /* @BroTech-Reserved icon-wifi-two-ring-svg.part.js */;
-    if (r > -67) return /* @BroTech-Reserved icon-wifi-one-ring-svg.part.js */;
-    if (r > -72) return /* @BroTech-Reserved icon-wifi-edge-svg.part.js */;
-    if (r > -76) return /* @BroTech-Reserved icon-wifi-warning-yellow-svg.part.js */;
-    if (r > -80) return /* @BroTech-Reserved icon-wifi-warning-orange-svg.part.js */;
-    if (r > -85) return /* @BroTech-Reserved icon-wifi-question-svg.part.js */;
-    return /* @BroTech-Reserved icon-wifi-lost-svg.part.js */;
+    /* @BroTech-Reserved wifi-signal-icons.part.js */
   }
   const 火花字符 = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
   function 取火花线(环, 头, 最大, 最小 = 0) {
@@ -364,19 +355,12 @@ let _saved = null;
   }
 
 
-  /* @BroTech-Reserved speed-chart-core.part.js */
+      /* @BroTech-Reserved speed-chart.part.js */
 
   const st = document.createElement('style');
-  st.innerHTML = `.config-item{
-clear:both;}.config-item-box{display:flex!important;
-        align-items:stretch!important;padding-bottom:
-        4px!important;}.config-item .logo{width:33%!important;
-        float:none!important;display:flex!important;flex-direction:row;}.config-item .dev-intro{flex:1;display:flex!important;flex-direction:column;justify-content:flex-start;min-height:20px;padding-bottom:0!important;margin-bottom:0!important;}.config-item .info{width:27%!important;float:none!important;display:flex!important;flex-direction:column;justify-content:flex-start;padding:0 10px!important;border-right:1px solid #eee;}.config-item .speed{width:40%!important;float:none!important;display:flex!important;flex-direction:column;justify-content:center;padding:0 10px!important;}.geek-row{display:flex;justify-content:space-between;align-items:center;white-space:nowrap;height:20px;}
-    .geek-label{width:110px;color:#333;font-weight:bold;}.geek-val-box{flex:1;display:flex;gap:15px;margin-left:10px;}.geek-fixed-width{display:inline-block;width:120px;}.geek-right-box{text-align:right;min-width:220px;font-weight:bold;}.c-up{color:#ff4c00;}.c-down{color:#0059fa;}.gege-up-box,.gege-down-box{margin-top:auto!important;margin-bottom:0!important;width:95%;}.gege-ratio-box{margin-top:10px;width:95%;margin-bottom:5px;}.t-row{font-size:12px;font-weight:bold;margin-bottom:2px;display:flex;justify-content:space-between;font-family:system-ui, sans-serif;}.zte-thin-bar{width:100%;height:3px;background:rgba(0,0,0,0.05);border-radius:1.5px;overflow:hidden;}.zte-thin-bar-inner{height:100%;transition:width 0.5s ease-out;}.zte-thin-bar-inner.up{background:#ff4c00;}.zte-thin-bar-inner.down{background:#0059fa;}.gege-ratio-top{display:flex;justify-content:space-between;font-size:12px;font-weight:bold;margin-bottom:2px;}.gege-ratio-bar{width:100%;height:4px;background:#0059fa;border-radius:2px;overflow:hidden;}.gege-ratio-bar-inner{height:100%;background:#ff4c00;transition:width 0.5s ease-out;}.zte-enhance-speed{display:flex;flex-direction:column;gap:6px;width:100%;font-family:system-ui, sans-serif;}
-    .zte-bar-wrap{position:relative;width:100%;border-radius:4px;border:1px solid;font-size:13px;font-weight:bold;overflow:hidden;padding:3px 8px;display:flex;justify-content:space-between;align-items:center;z-index:1;box-sizing:border-box;}.zte-bar-wrap span{font-size:inherit;font-weight:inherit;}.zte-bar-up{color:#ff4c00;border-color:rgba(255,76,0,0.3);}.zte-bar-down{color:#0059fa;border-color:rgba(0,89,250,0.3);}.zte-bar-up::before{content:'';position:absolute;left:0;top:0;bottom:0;z-index:-1;background:rgba(255,76,0,0.12);width:var(--p-up,0%);transition:width 0.5s;}.zte-bar-down::before{content:'';position:absolute;left:0;top:0;bottom:0;z-index:-1;background:rgba(0,89,250,0.12);width:var(--p-down,0%);transition:width 0.5s;}#config-list.gege-list-container{contain:content!important;background-color:#ffffff!important;border-radius:8px!important;border:1px solid #e0e0e0!important;padding:20px 30px!important;box-shadow:0 2px 10px rgba(0,0,0,0.02)!important;margin-top:10px!important;}.gege-section{margin-bottom:10px;}
-    .gege-section:last-child{margin-bottom:0;}.gege-list-container .config-title{font-size:16px!important;font-weight:bold!important;color:#333!important;margin:15px 0 10px 0!important;padding-bottom:5px!important;}.gege-list-container .gege-section:first-child .config-title{margin-top:0!important;}.gege-empty-state{color:#999!important;font-size:14px!important;padding:0 0 15px 5px!important;border-bottom:1px solid #f0f0f0!important;margin-bottom:5px!important;}.gege-list-item{background-color:transparent!important;border-bottom:1px solid #f0f0f0!important;padding:6px 10px!important;margin-bottom:0!important;border-radius:0!important;}
-    .gege-list-item:last-child{border-bottom:none!important;}#zte-geek-board{contain:layout style;background-color:transparent!important;border-left:4px solid #0059fa!important;border-radius:0!important;padding:5px 0 5px 15px!important;margin:10px 0 15px 0!important;box-shadow:none!important;border-bottom:1px solid #f0f0f0!important;font-size:14px;display:flex;flex-direction:column;gap:6px;padding-bottom:15px!important;}#gege-global-overlay #zte-geek-board.geek-frozen-pane{position:sticky!important;top:0px!important;z-index:100!important;background-color:#f3f4f5!important;margin-top:0!important;padding-top:15px!important;box-shadow:0 10px 15px -3px rgba(0,0,0,0.05)!important;border-radius:0 0 8px 8px!important;}.gege-pin{cursor:pointer;font-size:11px;filter:grayscale(100%);opacity:0.5;transition:transform 0.2s;margin-left:2px;}
-    .gege-pin.active{filter:none;opacity:1;transform:scale(1.1);}#gege-global-overlay{position:fixed;top:7.5%;right:0;bottom:0;background:#f3f4f5;z-index:9999;overflow-y:auto;padding-bottom:50px;left:0!important;border-radius:16px 16px 0 0;box-shadow:0 -5px 25px rgba(0,0,0,0.15);transition:top 0.3s ease;}@media (max-width: 768px){.geek-right-box:has(#gb-wan-zero-up),.geek-right-box:has(#gb-cur-up-vol){display:none!important}.gege-list-item{padding:12px 10px!important;position:relative!important}.config-item-box{flex-direction:column!important;padding-bottom:0!important}.config-item .info,.config-item .logo,.config-item .speed{width:100%!important;border:none!important;padding:0!important;position:static!important}.config-item .dev-intro{min-height:auto!important;justify-content:center!important;padding-right:90px!important}.config-item .logo{padding-bottom:4px!important}.config-item .info{flex-direction:column!important;margin:0 0 6px 0!important;gap:2px!important}.dev-ip{position:absolute!important;top:12px!important;right:10px!important;font-size:11px!important;background:rgba(0,89,250,0.08);color:#0059fa!important;padding:2px 6px!important;border-radius:4px;font-weight:bold;line-height:1.2;z-index:10;width:auto!important}.dev-number{width:auto!important;margin:0!important;font-size:11px!important}.gege-ratio-box{width:100%!important;margin-top:2px!important;margin-bottom:0!important}.gege-down-box{width:100%!important;margin-top:2px!important}#zte-geek-board{padding:8px!important;gap:0!important;font-size:11.5px!important}.geek-row{height:auto!important;flex-wrap:wrap!important;margin-bottom:4px!important;justify-content:flex-start!important;gap:2px 6px!important;line-height:1.3!important}.geek-label{width:auto!important;min-width:60px!important;font-size:11.5px!important;flex:0 0 auto!important}.geek-val-box{width:auto!important;flex:1 1 0%!important;display:flex!important;flex-wrap:wrap!important;margin-left:0!important;gap:2px 6px!important}.geek-fixed-width{width:auto!important}.geek-right-box{width:100%!important;flex:0 0 100%!important;text-align:left!important;font-size:11.5px!important;margin-top:2px!important;margin-left:0!important}.gege-list-container{padding:8px!important}.zte-enhance-speed{gap:4px!important}} .gege-pkt-line{color:#666;font-size:11.5px;font-family:system-ui, sans-serif;line-height:1.35;white-space:normal}.dev-title-line{display:flex;align-items:center;justify-content:space-between;gap:10px;width:95%;}.dev-title-line .dev-name-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.gege-rssi{font-size:11.5px;font-weight:normal;color:#666;margin-left:2em;white-space:nowrap;flex-shrink:0;}#zte-geek-board{position:relative!important;overflow:visible!important;}#gege-speed-chart{position:absolute;z-index:25;box-sizing:border-box;cursor:move;user-select:none;touch-action:none;container-type:inline-size;}#gege-speed-chart canvas{display:block;width:100%;height:100%;}.gege-chart-head,.gege-chart-foot{position:absolute;left:clamp(28px,8%,36px);right:8px;display:flex;align-items:center;pointer-events:none;font:bold clamp(9px,2.1cqw,11px) system-ui,sans-serif;white-space:nowrap;overflow:hidden;}.gege-chart-head{top:2px;color:#111;gap:8px;}.gege-chart-head [data-gc="range"]{color:#666;font-weight:normal;overflow:hidden;text-overflow:ellipsis;margin-left:auto;}.gege-chart-foot{bottom:4px;justify-content:flex-start;gap:clamp(3px,1.1cqw,12px);}.gege-chart-foot span{min-width:0;overflow:hidden;text-overflow:ellipsis;}.gc-up{color:#ff4c00;flex:0 1 auto;}.gc-down{color:#0b5;flex:0 1 auto;}.gc-extra{color:#666;text-align:right;margin-left:auto;flex:1 1 0;min-width:0;}#gege-speed-chart .gege-chart-resize{position:absolute;right:-4px;bottom:-4px;width:13px;height:13px;border-right:3px solid #0059fa;border-bottom:3px solid #0059fa;cursor:nwse-resize;border-radius:2px;}@media (max-width: 768px){}
+  st.innerHTML = `/* @BroTech-Reserved style-panel.part.js */
+    .gege-pkt-line{color:#666;font-size:11.5px;font-family:system-ui, sans-serif;line-height:1.35;white-space:normal}.dev-title-line{display:flex;align-items:center;justify-content:space-between;gap:10px;width:95%;}.dev-title-line .dev-name-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.gege-rssi{font-size:11.5px;font-weight:normal;color:#666;margin-left:2em;white-space:nowrap;flex-shrink:0;}
+    .config-item .dev-intro{min-height:20px;}@media (min-width:769px){.config-item-box{padding-bottom:4px!important}.gege-list-item{padding:6px 10px!important}}
     `;
   document.
   head.
@@ -593,7 +577,7 @@ const ts = Date.now();
       window.__gIsF = !1;
     }
   }
-/* @BroTech-Reserved stage-ratio.part.js */
+  /* @BroTech-Reserved stage-ratio.part.js */
   function rUI(wU, wD, sU, sD, cI) {
     S.端口小齿轮 = ((S.端口小齿轮 || 0) + 1) & 63;
     if (S.端口小齿轮 === 1 || !S.端口已取) 刷端口信息(Date.now());
@@ -771,7 +755,12 @@ const ts = Date.now();
           }
         }
       }
-            for (let m in cI) {
+      const inv_boardUp = hpU > 0 ? 100 / hpU : 0;
+      const inv_LDn = LDn > 0 ? 100 / LDn : 0;
+      const inv_sU = sU > 0 ? 100 / sU : 0;
+      const inv_sD = sD > 0 ? 100 / sD : 0;
+
+      for (let m in cI) {
         let it = oDC[m];
         if (!it) continue;
         const cC = cI[m] || { upRate: 0, dnRate: 0, iface: "", offUp: 0, offDn: 0, 包上: 0, 包下: 0, 信号: 0 },
@@ -794,109 +783,14 @@ const ts = Date.now();
           if (cC.信号 | 0) { let p = Math.round((cC.信号 | 0) + 92 - (cC.iface === 'wl0' ? (S.RSSI频率修正 ?? 0) : 0)); rssiNode.innerHTML = `<span style="color:${p < 0 ? '#ff4c00' : 'inherit'}">${p}%</span>, ${cC.信号 | 0}`; }
           else rssiNode.textContent = '';
         }
+        let 包行 = inf && (cache.包数行 ??= inf.querySelector('.gege-pkt-line'));
+        if (包行) { 包行.style.display = S.包数据可用 ? '' : 'none'; if (S.包数据可用) 包行.innerHTML = `<span style="color:#ff4c00;">↑ ${Math.round(cS.包上总 || 0)}包</span><span style="color:#FF9800;">，${包上总 ? ((cS.包上总 || 0) * 100 / 包上总).toFixed(1) : '0.0'}%</span><span style="margin:0 6px;"></span><span style="color:#0059fa;">↓ ${Math.round(cS.包下总 || 0)}包</span><span style="color:#9c27b0;">，${包下总 ? ((cS.包下总 || 0) * 100 / 包下总).toFixed(1) : '0.0'}%</span><span style="color:#4CAF50; margin-left:8px;">${格式化包比(计算包比(cS.包上总 || 0, cS.包下总 || 0))}</span>`; }
 
-        if (dI && inf) {
-          let rB = cache.rBox ??= dI.querySelector('.gege-ratio-box');
-          if (!rB) {
-            let oRB = inf.querySelector('.gege-ratio-box'); if (oRB) oRB.remove();
-            rB = document.createElement('div'); rB.className = 'gege-ratio-box';
-            rB.style.cssText = 'margin-top: 4px; width: 95%; margin-bottom: 2px;';
-            rB.innerHTML = `<div class="gege-ratio-top"><span class="v-port"></span><span class="v-interval" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: normal; font-size: 12.5px; opacity: 0.75; letter-spacing: 0.5px;"><span class="c-up"></span><span style="color:#666; margin:0 3px;">，</span><span class="c-down"></span></span><span class="v-rt-pct"></span></div><div class="gege-ratio-bar"><div class="gege-ratio-bar-inner"></div></div>`;
-            dI.appendChild(rB);
-                        cache.rBox = rB;
-          }
-          
-          const bR = (hqU + hqD) > 0 ? (hqU * 100 / (hqU + hqD)) : 0;
-          let tC = "", tCol;
-          if (CONFIG.calcMode === 1) {
-            const rt = hqD > 0 ? (hqU / hqD) : (hqU > 0 ? Infinity : 0);
-            if (rt > CONFIG.ratioExtremeUp) { tCol = '#ff4c00'; tC = (rt === Infinity ? '∞' : rt.toFixed(2)) + '⚠️'; }
-            else if (rt > CONFIG.ratioWarnUp) { tCol = '#ff4c00'; tC = (rt * 100).toFixed(1) + '%'; }
-            else if (rt > CONFIG.ratioExtremeDown) { tCol = '#0059fa'; tC = (rt * 100).toFixed(1) + '%'; }
-            else { tCol = '#0059fa'; const rRt = hqU > 0 ? (hqD / hqU) : (hqD > 0 ? Infinity : 0); tC = (rRt === Infinity ? '∞' : rRt.toFixed(1)) + 'x'; }
-          } else {
-            tCol = bR > CONFIG.ratioThreshold ? '#ff4c00' : '#0059fa';
-            tC = bR.toFixed(1) + '%';
-          }
-          let pNm = CONFIG.portMap[cC.iface] || cC.iface || "未知";
-          if (cC.iface === 'wl1' && S.is5G_149) pNm = "5.8G";
-          (cache.rBoxPort ??= rB.querySelector('.v-port')).textContent = pNm;
-                    (cache.rBoxUp ??= rB.querySelector('.v-interval .c-up')).textContent = '' + fSV(hqU);
-          (cache.rBoxDn ??= rB.querySelector('.v-interval .c-down')).textContent = '' + fSV(hqD);
-          const rtP = cache.rtPct ??= rB.querySelector('.v-rt-pct');
-          rtP.textContent = tC; rtP.style.color = tCol;
-          (cache.rBoxBar ??= rB.querySelector('.gege-ratio-bar-inner')).style.width = Math.min(bR, 100) + '%';
-                    let ipNode = cache.ipNode ??= inf.querySelector('.dev-ip');
-          if (ipNode) {
-            let zBadge = cache.zBadge ??= ipNode.querySelector('.gege-zero-badge');
-            if (!zBadge) {
-              zBadge = document.createElement('span'); zBadge.className = 'gege-zero-badge gege-box';
-              ipNode.style.display = 'flex'; ipNode.style.justifyContent = 'space-between';
-              zBadge.style.cssText = 'color: #999; font-size: 11.5px; font-family: system-ui, sans-serif; margin-right: 5px;';
-                            ipNode.appendChild(zBadge);
-              cache.zBadge = zBadge;
-            }
-            zBadge.textContent = ((cS.zUC || 0) + (cS.zDC || 0)) < 6 ? "" : `[0估] ${!cS.zEU ? '' : fSV(cS.zEU)}，${!cS.zED ? '' : fSV(cS.zED)}｜${cS.zUC || 0},${cS.zDC || 0}`;
-          }
-          let 包行 = cache.包数行 ??= inf.querySelector('.gege-pkt-line');
-          if (包行) { 包行.style.display = S.包数据可用 ? '' : 'none'; if (S.包数据可用) 包行.innerHTML = `<span style="color:#ff4c00;">↑ ${Math.round(cS.包上总 || 0)}包</span><span style="color:#FF9800;">，${包上总 ? ((cS.包上总 || 0) * 100 / 包上总).toFixed(1) : '0.0'}%</span><span style="margin:0 6px;"></span><span style="color:#0059fa;">↓ ${Math.round(cS.包下总 || 0)}包</span><span style="color:#9c27b0;">，${包下总 ? ((cS.包下总 || 0) * 100 / 包下总).toFixed(1) : '0.0'}%</span><span style="color:#4CAF50; margin-left:8px;">${格式化包比(计算包比(cS.包上总 || 0, cS.包下总 || 0))}</span>`; }
-          let bx = cache.upBox ??= inf.querySelector('.gege-up-box');
-          if (!bx || bx.querySelector('.t-row')) {
-            if (bx) bx.remove();
-            let oUB = dI.querySelector('.gege-up-box'); if (oUB) oUB.remove();
-            bx = document.createElement('div'); bx.className = 'gege-up-box';
-            bx.style.cssText = 'display:flex; align-items:center; width:95%; margin-top:0px; margin-bottom:2px;';
-            bx.innerHTML = `<span class="v-vol" style="display:none;"></span><div class="zte-thin-bar" style="flex:1; margin:0;"><div class="zte-thin-bar-inner up"></div></div><span class="v-pct c-up" style="font-size:11.5px; font-weight:bold; font-family:system-ui, sans-serif; width:40px; text-align:right;"></span>`;
-            inf.appendChild(bx);
-            cache.upBox = bx;
-          }
-          let p = hpU > 0 ? (hqU * 100 / hpU) : 0;
-                    (cache.upVol ??= bx.querySelector('.v-vol')).textContent = fV(cS.intUp);
-          (cache.upPct ??= bx.querySelector('.v-pct')).textContent = p.toFixed(1) + '%';
-          (cache.upBar ??= bx.querySelector('.zte-thin-bar-inner')).style.width = Math.min(p, 100) + '%';
-
-          let dBx = cache.dBox ??= inf.querySelector('.gege-down-box');
-          if (!dBx || dBx.querySelector('.t-row')) {
-            if (dBx) dBx.remove();
-            dBx = document.createElement('div'); dBx.className = 'gege-down-box';
-            dBx.style.cssText = 'display:flex; align-items:center; width:95%; margin-top:6px; margin-bottom:2px;';
-            dBx.innerHTML = `<span class="v-vol" style="display:none;"></span><div class="zte-thin-bar" style="flex:1; margin:0;"><div class="zte-thin-bar-inner down"></div></div><span class="v-pct c-down" style="font-size:11.5px; font-weight:bold; font-family:system-ui, sans-serif; width:40px; text-align:right;"></span>`;
-            inf.appendChild(dBx);
-            cache.dBox = dBx;
-          }
-          let dp = LDn > 0 ? (cS.intDn * 100 / LDn) : 0; 
-          (cache.dBoxVol ??= dBx.querySelector('.v-vol')).textContent = fV(cS.intDn);
-                    (cache.dBoxPct ??= dBx.querySelector('.v-pct')).textContent = dp.toFixed(1) + '%';
-          (cache.dBoxBar ??= dBx.querySelector('.zte-thin-bar-inner')).style.width = Math.min(dp, 100) + '%';
-        }
-        
-        const sp = cache.speed ??= it.querySelector('.speed');
-        if (sp) {
-          let enh = cache.enh ??= sp.querySelector('.zte-enhance-speed');
-          if (!enh) {
-            sp.querySelectorAll('.connect-up, .connect-down').forEach(n => { n.style.display = 'none'; });
-            enh = document.createElement('div'); enh.className = 'zte-enhance-speed';
-            enh.innerHTML = `<div class="zte-bar-wrap zte-bar-up"><span class="v-val" style="white-space: nowrap; flex-shrink: 0;"></span><span class="v-spark" style="font-family: monospace; letter-spacing: -1.5px; font-size: 11px; margin: 0 8px; opacity: 0.65; white-space: pre; flex: 1; overflow: hidden; text-align: right;"></span><span class="v-pct" style="white-space: nowrap; flex-shrink: 0;"></span></div><div class="zte-bar-wrap zte-bar-down"><span class="v-val" style="white-space: nowrap; flex-shrink: 0;"></span><span class="v-spark" style="font-family: monospace; letter-spacing: -1.5px; font-size: 11px; margin: 0 8px; opacity: 0.65; white-space: pre; flex: 1; overflow: hidden; text-align: right;"></span><span class="v-pct" style="white-space: nowrap; flex-shrink: 0;"></span></div>`;
-            sp.appendChild(enh);
-            cache.enh = enh;
-          }
-          let pu = sU > 0 ? (cC.upRate * 100 / sU) : 0,
-              pd = sD > 0 ? (cC.dnRate * 100 / sD) : 0,
-              bU = cache.bU ??= enh.querySelector('.zte-bar-up'),
-              bD = cache.bD ??= enh.querySelector('.zte-bar-down');
-          
+        /* @BroTech-Reserved device-card-integral.part.js */
           let clU = Math.max(...cS.hU, (S.aWu * 0.1) || 0, 512000);
           let clD = Math.max(...cS.hD, (S.aWd / 8) || 0);
           (cache.bUSpk ??= bU.querySelector('.v-spark')).textContent = 取火花线(cS.hU, cS.hIdx, clU, 73000);
           (cache.bDSpk ??= bD.querySelector('.v-spark')).textContent = 取火花线(cS.hD, cS.hIdx, clD, 1000000);
-
-          bU.style.setProperty('--p-up', Math.min(pu, 100) + '%');
-          (cache.bUVal ??= bU.querySelector('.v-val')).textContent = `🔼 ${fBy(cC.upRate)}`;
-          (cache.bUPct ??= bU.querySelector('.v-pct')).textContent = pu.toFixed(1) + '%';
-          
-          bD.style.setProperty('--p-down', Math.min(pd, 100) + '%');
-          (cache.bDVal ??= bD.querySelector('.v-val')).textContent = `🔽 ${fBy(cC.dnRate)}`;
-          (cache.bDPct ??= bD.querySelector('.v-pct')).textContent = pd.toFixed(1) + '%';
         }
       }
     });

@@ -427,7 +427,7 @@ let cSU = 0, cSD = 0, cI = Object.create(null);
         
         // 华硕 getTraffic 是整包快照：每一包都代表一次真实采样，即使连续两轮速率数值恰好相同也推进积分时间
         const ms = n - cS.lUT;
-        /* @BroTech-Reserved lan-trapezoid-wakeup.part.js */
+          /* @BroTech-Reserved lan-trapezoid-wakeup.part.js */
         if (cC.name && cC.name !== '华硕设备') cS.name = cC.name;
         if (cC.ip && cC.ip !== '-.-.-.-') cS.ip = cC.ip;
         cS.upR = cC.upRate; cS.dnR = cC.dnRate; cS.lUT = n;
@@ -470,7 +470,7 @@ let cSU = 0, cSD = 0, cI = Object.create(null);
     );
   }
 function doSettle(nowMs) {
-    /* @BroTech-Reserved settle-all-01.part.js */
+    /* @BroTech-Reserved settle-export.part.js */
     GM_setValue('ha_snapshot', { timestamp: nowMs, global: {}, devices: {} }); S.cSnap = null;
     S.wLedgerUp = S.wLedgerDn = S.wTotUp = S.wTotDn = S.w2TotUp = S.w2TotDn = 0;
     S.bWU = S.oWU; S.bWD = S.oWD; S.dTU = S.dTD = 0;
@@ -483,12 +483,8 @@ function doSettle(nowMs) {
       s.uB = s.oU = s.lU ?? 0; s.dB = s.oD = s.lD ?? 0; s.lUT = settledAt;
       s.zEU = s.zED = s.zUC = s.zDC = 0; s.hU.fill(0); s.hD.fill(0);
     }
-        document.getElementById('gb-w-bnr')?.remove(); // 预警横幅
-    S.calcTime(Math.max(nowMs, S.Force_MS - CONFIG.自动导出 * 60000 + 1000) + CONFIG.时区补偿); // 瞬间算出下月/下周新线
-    window.gegeForceUIRedraw = !0; // 重绘 UI
-    setTimeout(() => { S._RST = !1; }, 2000); // 解开安全锁
   }
-/* @BroTech-Reserved stage-ratio.part.js */
+  /* @BroTech-Reserved stage-ratio.part.js */
   const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
   function getSpark(ringArr, headIdx, maxVal, minVal = 0) {
     let s = "";
@@ -500,26 +496,17 @@ function doSettle(nowMs) {
   }
   function 取网口图标(速率 = 0) {
     let s = +速率 || 0;
-    if (!s || s >= 2500) return /* @BroTech-Reserved icon-wired-default-svg.part.js */;
+    if (!s || s >= 2500) return `<svg viewBox="0 0 100 100" width="45" height="45"><rect x="15" y="15" width="70" height="65" rx="5" fill="#cfd8dc" stroke="#90a4ae" stroke-width="4"/><path d="M 25,25 L 75,25 L 75,60 L 60,60 L 60,75 L 40,75 L 40,60 L 25,60 Z" fill="#263238"/><g fill="#ffca28"><rect x="30" y="25" width="2.5" height="18"/><rect x="35" y="25" width="2.5" height="18"/><rect x="40" y="25" width="2.5" height="18"/><rect x="45" y="25" width="2.5" height="18"/><rect x="52.5" y="25" width="2.5" height="18"/><rect x="57.5" y="25" width="2.5" height="18"/><rect x="62.5" y="25" width="2.5" height="18"/><rect x="67.5" y="25" width="2.5" height="18"/></g><circle cx="21" cy="73" r="3.5" fill="#4caf50"/><circle cx="79" cy="73" r="3.5" fill="#ffb300"/></svg>`;
     let c = s >= 1000 ? '#4CAF50' : s >= 100 ? '#5394CC' : '#E7B05C';
-    return /* @BroTech-Reserved icon-wired-active-svg.part.js */;
+    return `<svg viewBox="0 0 100 100" width="45" height="45" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(180 50 50)"><path d="M18 82V36Q18 32 22 32H28V24Q28 20 32 20H38V14Q38 10 42 10H58Q62 10 62 14V20H68Q72 20 72 24V32H78Q82 32 82 36V82Q82 86 78 86H22Q18 86 18 82Z" fill="${c}" fill-opacity=".10" stroke="${c}" stroke-width="4" stroke-linejoin="round"/><g stroke="${c}" stroke-width="3.2" stroke-linecap="round"><path d="M31 54V76"/><path d="M36.5 54V76"/><path d="M42 54V76"/><path d="M47.5 54V76"/><path d="M53 54V76"/><path d="M58.5 54V76"/><path d="M64 54V76"/><path d="M69.5 54V76"/></g></g></svg>`;
   }
+  const 信号档位 = [-40, -46, -50, -56, -61, -67, -72, -76, -80, -85];
   const getIconSvg = (r, isW, phy = 0) => {
     if (isW) return 取网口图标(phy);
     let c = r > -24 ? '#4caf50' : r > -35 ? '#9c27b0' : '#0059fa';
-    if (r > -40) return `<svg viewBox="0 0 100 100" width="45" height="45"><path d="M 50,85 L 10,35 A 65,65 0 0,1 90,35 Z" fill="${c}"/></svg>`;
-    if (r > -46) return /* @BroTech-Reserved icon-wifi-high-svg.part.js */;
-    if (r > -50) return /* @BroTech-Reserved icon-wifi-good-svg.part.js */;
-    if (r > -56) return /* @BroTech-Reserved icon-wifi-three-ring-svg.part.js */;
-    if (r > -61) return /* @BroTech-Reserved icon-wifi-two-ring-svg.part.js */;
-    if (r > -67) return /* @BroTech-Reserved icon-wifi-one-ring-svg.part.js */;
-    if (r > -72) return /* @BroTech-Reserved icon-wifi-edge-svg.part.js */;
-    if (r > -76) return /* @BroTech-Reserved icon-wifi-warning-yellow-svg.part.js */;
-    if (r > -80) return /* @BroTech-Reserved icon-wifi-warning-orange-svg.part.js */;
-    if (r > -85) return /* @BroTech-Reserved icon-wifi-question-svg.part.js */;
-    return /* @BroTech-Reserved icon-wifi-lost-svg.part.js */;
+    /* @BroTech-Reserved wifi-signal-icons.part.js */
   };
-  /* @BroTech-Reserved speed-chart-core.part.js */
+      /* @BroTech-Reserved speed-chart.part.js */
 
   function rUI(wU, wD, sU, sD, cI) {
     let tOD = 0,
@@ -574,16 +561,7 @@ S.rTick = ((S.rTick || 0) + 1) & 3;
         try { GM_setValue('ha_snapshot', S.cSnap); } catch(e) {console.warn(e);}
     }
         let nowMs = Date.now();
-          if (nowMs >= S.Force_MS && !S._RST) {doSettle(nowMs);
-        } else if (nowMs >= S.Warn_MS && !document.getElementById('gb-w-bnr')) {
-          let bd = document.getElementById('zte-geek-board');
-          if (bd) {
-            let bn = document.createElement('div'); bn.id = 'gb-w-bnr';
-            bn.style.cssText = 'background:#fff3cd;color:#856404;padding:10px 15px;margin-bottom:10px;border-radius:6px;border-left:5px solid #ffc107;font-weight:bold;font-size:13px;display:flex;justify-content:space-between;align-items:center;width:100%;box-sizing:border-box;';
-            bn.innerHTML = `<span> 统计周期即将结束，流量将在跨越边界时自动清零备份。</span><button id="gb-f-btn" style="background:#ffc107;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-weight:bold;color:#333;">立即导出并清零</button>`;
-            bd.insertBefore(bn, bd.firstChild);
-            document.getElementById('gb-f-btn').onclick = () => doSettle(Date.now());}
-          }
+          /* @BroTech-Reserved settle-banner.part.js */
     }
 
     let state_fault = S._qosAdj || 0; 
@@ -758,54 +736,16 @@ S.rTick = ((S.rTick || 0) + 1) & 3;
         (cache.rssiNode ??= it.querySelector('.gege-rssi')) && (cache.rssiNode.innerHTML = !有线 && rRs ? `<span style="color:${pRs < 0 ? '#ff4c00' : 'inherit'}">${pRs}%</span>, ${rRs}` : '');
         let hqU = cln[m] ? cln[m].up : 0;
         let hqD = cln[m] ? cln[m].down : 0;
-        /* @BroTech-Reserved rUI-nested-mi01-04.part.js */
-                    (cache.rBoxUp ??= rB.querySelector('.v-interval .c-up')).textContent = '' + fSV(hqU);
-          (cache.rBoxDn ??= rB.querySelector('.v-interval .c-down')).textContent = '' + fSV(hqD);
-          const rtP = cache.rtPct ??= rB.querySelector('.v-rt-pct');
-          rtP.textContent = tC; rtP.style.color = tCol;
-          (cache.rBoxBar ??= rB.querySelector('.gege-ratio-bar-inner')).style.width = Math.min(bR, 100) + '%';
-                    
-          let dBx = cache.dBox ??= inf.querySelector('.gege-down-box');
-          if (!dBx) {
-            dBx = document.createElement('div'); dBx.className = 'gege-down-box';
-            dBx.innerHTML = `<div class="t-row c-down"><span>↓ <span class="v-vol"></span></span><span class="v-pct"></span></div><div class="zte-thin-bar"><div class="zte-thin-bar-inner down"></div></div>`;
-            inf.appendChild(dBx);
-            cache.dBox = dBx;
-          }
-          let dp = (cC.offDn || 0) * inv_tOD;
-          (cache.dBoxVol ??= dBx.querySelector('.v-vol')).textContent = fVD(cS.intDn, cC.offDn);
-                    (cache.dBoxPct ??= dBx.querySelector('.v-pct')).textContent = dp.toFixed(1) + '%';
-          (cache.dBoxBar ??= dBx.querySelector('.zte-thin-bar-inner')).style.width = Math.min(dp, 100) + '%';
-        }
+                        let tN = cache.timeNode ??= it.querySelector('.gege-online-time');
+        if (tN && cS.onS > 0) tN.textContent = `在线：${fOT(cS.onS)}`;
         
-        const sp = cache.speed ??= it.querySelector('.speed');
-        if (sp) {
-          let enh = cache.enh ??= sp.querySelector('.zte-enhance-speed');
-          if (!enh) {
-            sp.querySelectorAll('.connect-up, .connect-down').forEach(n => { n.style.display = 'none'; });
-            enh = document.createElement('div'); enh.className = 'zte-enhance-speed';
-            enh.innerHTML = `<div class="zte-bar-wrap zte-bar-up"><span class="v-val" style="white-space: nowrap; flex-shrink: 0;"></span><span class="v-spark" style="font-family: monospace; letter-spacing: -2px; font-size: 10px; margin: 0 6px; opacity: 0.65; white-space: pre; flex: 1; overflow: hidden; text-align: right;"></span><span class="v-pct" style="white-space: nowrap; flex-shrink: 0;"></span></div><div class="zte-bar-wrap zte-bar-down"><span class="v-val" style="white-space: nowrap; flex-shrink: 0;"></span><span class="v-spark" style="font-family: monospace; letter-spacing: -2px; font-size: 10px; margin: 0 6px; opacity: 0.65; white-space: pre; flex: 1; overflow: hidden; text-align: right;"></span><span class="v-pct" style="white-space: nowrap; flex-shrink: 0;"></span></div>`;
-            sp.appendChild(enh);
-            cache.enh = enh;
-          }
-          let pu = cC.upRate * inv_sU,
-              pd = cC.dnRate * inv_sD,
-              bU = cache.bU ??= enh.querySelector('.zte-bar-up'),
-              bD = cache.bD ??= enh.querySelector('.zte-bar-down');
-          
+        const dI = cache.devIntro ??= it.querySelector('.dev-intro');
+        /* @BroTech-Reserved device-card-official.part.js */
           let clU = (S.aWu * 0.1) || 0; if (clU < 512000) clU = 512000;
           let clD = (S.aWd * 0.125) || 0;
           for (let i = 0; i < 64; i++) { if (cS.hU[i] > clU) clU = cS.hU[i]; if (cS.hD[i] > clD) clD = cS.hD[i]; }
           (cache.bUSpk ??= bU.querySelector('.v-spark')).textContent = getSpark(cS.hU, cS.hIdx, clU, 73000);
           (cache.bDSpk ??= bD.querySelector('.v-spark')).textContent = getSpark(cS.hD, cS.hIdx, clD, 1000000);
-
-          bU.style.setProperty('--p-up', Math.min(pu, 100) + '%');
-          (cache.bUVal ??= bU.querySelector('.v-val')).textContent = `🔼 ${fBy(cC.upRate)}`;
-          (cache.bUPct ??= bU.querySelector('.v-pct')).textContent = pu.toFixed(1) + '%';
-          
-          bD.style.setProperty('--p-down', Math.min(pd, 100) + '%');
-          (cache.bDVal ??= bD.querySelector('.v-val')).textContent = `🔽 ${fBy(cC.dnRate)}`;
-          (cache.bDPct ??= bD.querySelector('.v-pct')).textContent = pd.toFixed(1) + '%';
         }
       }
     });

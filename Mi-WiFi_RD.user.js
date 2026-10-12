@@ -104,6 +104,7 @@ const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&q
     wMaxU: 0, wMaxD: 0, wMinU: Infinity, wMinD: Infinity, 图表拖: null, 图表待画: 0
   };
   window.__gIsF = !1;
+  const 版本号 = (typeof GM_info !== 'undefined' && GM_info.script?.version) || '环境不支持获取版本号';
 
   function fB(bps) {
 		if (bps > 1e9) return `${(bps * 1e-6).toFixed(1)} Mbit/s`;
@@ -157,7 +158,7 @@ function fBy(bps) {
         ? `${d}天${h}时${m}分${s}秒` 
         : `${h}小时${m}分${s}秒`;}
 
-    S.calcTime = (L) => {
+  S.calcTime = (L) => {
     S.Force_MS = (CONFIG.周期类型 === 'M' ? Date.UTC(new Date(L).getUTCFullYear(), new Date(L).getUTCMonth() + (L >= Date.UTC(new Date(L).getUTCFullYear(), new Date(L).getUTCMonth(), CONFIG.周_天设置) ? 1 : 0), CONFIG.周_天设置) : (CONFIG.周期类型 === 'W' ? Date.UTC(new Date(L).getUTCFullYear(), new Date(L).getUTCMonth(), new Date(L).getUTCDate()) + ((CONFIG.周_天设置 - new Date(L).getUTCDay() > 0 ? CONFIG.周_天设置 - new Date(L).getUTCDay() : CONFIG.周_天设置 - new Date(L).getUTCDay() + 7) * 86400000) : (CONFIG.周期类型 === 'D' ? Date.parse(CONFIG.基准日期 + 'T00:00:00Z') + (Math.floor((L - Date.parse(CONFIG.基准日期 + 'T00:00:00Z')) / (CONFIG.周_天设置 * 86400000)) + 1) * CONFIG.周_天设置 * 86400000 : Infinity))) - CONFIG.时区补偿;
     S.Warn_MS = S.Force_MS + CONFIG.报告时间 * 60000;
     S.Force_MS += CONFIG.自动导出 * 60000;
@@ -312,7 +313,7 @@ async function rSD() {
       if (wanRateValid && S.wLT === undefined) { S.wLT = n; }
       else if (wanRateValid && (cWU !== S.wInstUp || cWD !== S.wInstDn)) {
         const wDt = n - S.wLT;
-                if (S.wInstUp > 0) { S.wTotUp += (S.wInstUp + cWU) * wDt * 0.0005; }
+        if (S.wInstUp > 0) { S.wTotUp += (S.wInstUp + cWU) * wDt * 0.0005; }
         else if (cWU > 0) { const wEU = cWU * 0.5 * CONFIG.wanRefreshInterval; S.wTotUp += wEU; S.wZEU = (S.wZEU || 0) + wEU; S.wZEUC = (S.wZEUC || 0) + 1; }
         if (S.wInstDn > 0) { S.wTotDn += (S.wInstDn + cWD) * wDt * 0.0005; }
         else if (cWD > 0) { const wED = cWD * 0.5 * CONFIG.wanRefreshInterval; S.wTotDn += wED; S.wZED = (S.wZED || 0) + wED; S.wZEDC = (S.wZEDC || 0) + 1; }
@@ -393,7 +394,8 @@ async function rSD() {
   }
 
   function buildCSV() {
-            const csvQ = s => `"${s.replaceAll('"', '""')}"`; // RFC 4180：字段整体加引号，内部双引号翻倍
+    const 读档说明 = ' （含路由器后台读档）';
+    const csvQ = s => `"${s.replaceAll('"', '""')}"`; // RFC 4180：字段整体加引号，内部双引号翻倍
     const csvE = v => {
       let s = String(v ?? '');
       if (typeof v === 'string' && /^(?:\s*[=+\-@＝＋－＠]|[\t\r\n])/.test(s)) s = "'" + s; // 防表格公式注入
@@ -403,7 +405,7 @@ async function rSD() {
     const csvRowT = a => a.map(v => csvQ(String(v ?? ''))).join(','); // 仅限脚本自带可信常量
     return ((sp, now, start) => '\uFEFF' + [
       csvRow([`哥哥科技 硬路由 NPU 增强系列：专用组件 ${版本号} 生成`]),
-            csvRow([`统计周期：${new Date(start + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} 至 ${new Date(now + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} (UTC${CONFIG.时区补偿 > 0 ? '+' : ''}${CONFIG.时区补偿 / 3600000})${CONFIG.readSaveData === 1 ? ' （含路由器后台读档）' : ''}`]),
+      csvRow([`统计周期：${new Date(start + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} 至 ${new Date(now + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} (UTC${CONFIG.时区补偿 > 0 ? '+' : ''}${CONFIG.时区补偿 / 3600000})${CONFIG.readSaveData === 1 ? 读档说明 : ''}`]),
       csvRowT(['--- [全局统计] ---']),
       csvRow(['WAN总上传(bit)','WAN总下载(b)','高精全局上行(b)','高精全局下行(b)','LAN积分总上行(b)','LAN积分总下行(b)','本次在线总上行(b)','本次在线总下行(b)']),
       csvRow([Math.round(sp.global?.wan_up||0),Math.round(sp.global?.wan_down||0),Math.round(sp.global?.lan_high_up||0),Math.round(sp.global?.lan_high_down||0),Math.round(sp.global?.lan_integral_up||0),Math.round(sp.global?.lan_integral_down||0),Math.round(sp.global?.lan_off_up||0),Math.round(sp.global?.lan_off_down||0)]),
@@ -422,22 +424,22 @@ async function rSD() {
     );
   }
 function doSettle(nowMs) {
-        S._RST = !0; // 防重入锁
+    S._RST = !0; // 防重入锁
     let csv = buildCSV(), a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8;'})); a.download = `哥哥科技_路由器统计数据导出_${new Date(nowMs + CONFIG.时区补偿).toISOString().slice(2, 19).replace(/[-:]/g, '').replace('T', '_')}_${nowMs}.csv`; a.click(); // 文件
     let w = window.open('about:blank', '_blank');
     if (w) { w.document.write(`<!DOCTYPE html><html><head><title>流量结算备份</title></head><body style="background:#f3f4f5;font-family:system-ui,sans-serif;padding:40px 20px;color:#333;"><div style="background:#fff;padding:30px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.05);max-width:850px;margin:0 auto;"><h2 style="color:#0059fa;margin-top:0;border-bottom:2px solid #f0f0f0;padding-bottom:15px;">本次数据结算周期已结束</h2><p style="font-size:14px;line-height:1.7;color:#555;"><b>哥哥科技提示您：</b>请点击下方下载按钮将 CSV 报表保存到本地。<br>若下载失败，请点击复制按钮，新建文本文档粘贴后将拓展名改为 .csv 即可。</p><button id="dl-btn" style="background:#0059fa;color:#fff;border:none;padding:12px 24px;border-radius:6px;font-weight:bold;cursor:pointer;margin-right:10px;">📥 再次下载 CSV</button><button id="cp-btn" style="background:#4caf50;color:#fff;border:none;padding:12px 24px;border-radius:6px;font-weight:bold;cursor:pointer;">📋 一键复制内容</button><div style="background:#282c34;color:#abb2bf;padding:15px;border-radius:8px;overflow-x:auto;margin-top:20px;"><pre id="csv-data" style="margin:0;font-size:13px;line-height:1.5;"></pre></div></div><script>document.getElementById('dl-btn').onclick=function(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([document.getElementById('csv-data').textContent],{type:'text/csv;charset=utf-8;'}));a.download='哥哥科技_路由器统计数据补下_${nowMs}.csv';a.click();};document.getElementById('cp-btn').onclick=function(){let t=document.createElement('textarea');t.value=document.getElementById('csv-data').textContent;document.body.appendChild(t);t.select();try{document.execCommand('copy');alert('复制成功！');}catch(e){alert('复制失败，请手动全选复制');}document.body.removeChild(t);};</script></body></html>`); w.document.getElementById('csv-data').textContent = csv; }
     GM_setValue('gege_reset_ms', nowMs);
-    GM_setValue('ha_snapshot', { timestamp: nowMs, global: {}, devices: {} }); S.snap = {}; S.cSnap = null;
-    S.wTotUp = S.wTotDn = S.w2TotUp = S.w2TotDn = 0; // 内存原地清零
-    for (let k in S.cls) { let s = S.cls[k]; s.intUp = s.intDn = 0; s.uB = s.oU = s.lU; s.dB = s.oD = s.lD; s.hU.fill(0); s.hD.fill(0); } // 内存原地清零底表
-        document.getElementById('gb-w-bnr')?.remove(); // 预警横幅
+    document.getElementById('gb-w-bnr')?.remove(); // 预警横幅
     S.calcTime(Math.max(nowMs, S.Force_MS - CONFIG.自动导出 * 60000 + 1000) + CONFIG.时区补偿); // 瞬间算出下月/下周新线
     window.gegeForceUIRedraw = !0; // 重绘 UI
     setTimeout(() => { S._RST = !1; }, 2000); // 解开安全锁
+    GM_setValue('ha_snapshot', { timestamp: nowMs, global: {}, devices: {} }); S.snap = {}; S.cSnap = null;
+    S.wTotUp = S.wTotDn = S.w2TotUp = S.w2TotDn = 0; // 内存原地清零
+    for (let k in S.cls) { let s = S.cls[k]; s.intUp = s.intDn = 0; s.uB = s.oU = s.lU; s.dB = s.oD = s.lD; s.hU.fill(0); s.hD.fill(0); } // 内存原地清零底表
   }
 
-const calcStageRatio = (W, L_int, L_hp) => {
+  const calcStageRatio = (W, L_int, L_hp) => {
     if (W === 0) return 1.0;
     let L_max = Math.max(L_int, L_hp);
     let L_min = Math.min(L_int, L_hp);
@@ -459,7 +461,7 @@ const calcStageRatio = (W, L_int, L_hp) => {
     }
     return s;
   }
-        function 记总速率图(u, d) {
+      function 记总速率图(u, d) {
         u = u || 0; d = d || 0;
         const i = S.总图点数 & 8191;
         S.总上行图[i] = u; S.总下行图[i] = d; S.总图点数++;
@@ -830,7 +832,7 @@ if (typeof GM_setValue !== 'undefined' && S.rTick === 1) {
           }
           
           (cache.rBoxPort ??= rB.querySelector('.v-port')).textContent = CONFIG.portMap[cC.iface] || cC.iface || "未知";
-          (cache.rBoxUp ??= rB.querySelector('.v-interval .c-up')).textContent = '' + fSV(hqU);
+                    (cache.rBoxUp ??= rB.querySelector('.v-interval .c-up')).textContent = '' + fSV(hqU);
           (cache.rBoxDn ??= rB.querySelector('.v-interval .c-down')).textContent = '' + fSV(hqD);
           const rtP = cache.rtPct ??= rB.querySelector('.v-rt-pct');
           rtP.textContent = tC; rtP.style.color = tCol;
@@ -864,12 +866,6 @@ if (typeof GM_setValue !== 'undefined' && S.rTick === 1) {
               bU = cache.bU ??= enh.querySelector('.zte-bar-up'),
               bD = cache.bD ??= enh.querySelector('.zte-bar-down');
           
-          let clU = (S.aWu * 0.1) || 0; if (clU < 512000) clU = 512000;
-          let clD = (S.aWd * 0.125) || 0;
-          for (let i = 0; i < 64; i++) { if (cS.hU[i] > clU) clU = cS.hU[i]; if (cS.hD[i] > clD) clD = cS.hD[i]; }
-          (cache.bUSpk ??= bU.querySelector('.v-spark')).textContent = getSpark(cS.hU, cS.hIdx, clU, 73000);
-          (cache.bDSpk ??= bD.querySelector('.v-spark')).textContent = getSpark(cS.hD, cS.hIdx, clD, 1000000);
-
           bU.style.setProperty('--p-up', Math.min(pu, 100) + '%');
           (cache.bUVal ??= bU.querySelector('.v-val')).textContent = `🔼 ${fBy(cC.upRate)}`;
           (cache.bUPct ??= bU.querySelector('.v-pct')).textContent = pu.toFixed(1) + '%';
@@ -877,6 +873,11 @@ if (typeof GM_setValue !== 'undefined' && S.rTick === 1) {
           bD.style.setProperty('--p-down', Math.min(pd, 100) + '%');
           (cache.bDVal ??= bD.querySelector('.v-val')).textContent = `🔽 ${fBy(cC.dnRate)}`;
           (cache.bDPct ??= bD.querySelector('.v-pct')).textContent = pd.toFixed(1) + '%';
+          let clU = (S.aWu * 0.1) || 0; if (clU < 512000) clU = 512000;
+          let clD = (S.aWd * 0.125) || 0;
+          for (let i = 0; i < 64; i++) { if (cS.hU[i] > clU) clU = cS.hU[i]; if (cS.hD[i] > clD) clD = cS.hD[i]; }
+          (cache.bUSpk ??= bU.querySelector('.v-spark')).textContent = getSpark(cS.hU, cS.hIdx, clU, 73000);
+          (cache.bDSpk ??= bD.querySelector('.v-spark')).textContent = getSpark(cS.hD, cS.hIdx, clD, 1000000);
         }
       }
     });

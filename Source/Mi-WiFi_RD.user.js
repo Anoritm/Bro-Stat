@@ -232,6 +232,7 @@ const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&q
     wMaxU: 0, wMaxD: 0, wMinU: Infinity, wMinD: Infinity, 图表拖: null, 图表待画: 0
   };
   window.__gIsF = !1;
+  const 版本号 = (typeof GM_info !== 'undefined' && GM_info.script?.version) || '环境不支持获取版本号';
 
   function fB(bps) {
 		if (bps > 1e9) return `${(bps * 1e-6).toFixed(1)} Mbit/s`;
@@ -508,25 +509,8 @@ async function rSD() {
   }
 
   function buildCSV() {
-            const csvQ = s => `"${s.replaceAll('"', '""')}"`; // RFC 4180：字段整体加引号，内部双引号翻倍
-    const csvE = v => {
-      let s = String(v ?? '');
-      if (typeof v === 'string' && /^(?:\s*[=+\-@＝＋－＠]|[\t\r\n])/.test(s)) s = "'" + s; // 防表格公式注入
-      return csvQ(s);
-    };
-    const csvRow = a => a.map(csvE).join(',');
-    const csvRowT = a => a.map(v => csvQ(String(v ?? ''))).join(','); // 仅限脚本自带可信常量
-    return ((sp, now, start) => '\uFEFF' + [
-      csvRow([`哥哥科技 硬路由 NPU 增强系列：专用组件 ${版本号} 生成`]),
-            csvRow([`统计周期：${new Date(start + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} 至 ${new Date(now + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} (UTC${CONFIG.时区补偿 > 0 ? '+' : ''}${CONFIG.时区补偿 / 3600000})${CONFIG.readSaveData === 1 ? ' （含路由器后台读档）' : ''}`]),
-      csvRowT(['--- [全局统计] ---']),
-      csvRow(['WAN总上传(bit)','WAN总下载(b)','高精全局上行(b)','高精全局下行(b)','LAN积分总上行(b)','LAN积分总下行(b)','本次在线总上行(b)','本次在线总下行(b)']),
-      csvRow([Math.round(sp.global?.wan_up||0),Math.round(sp.global?.wan_down||0),Math.round(sp.global?.lan_high_up||0),Math.round(sp.global?.lan_high_down||0),Math.round(sp.global?.lan_integral_up||0),Math.round(sp.global?.lan_integral_down||0),Math.round(sp.global?.lan_off_up||0),Math.round(sp.global?.lan_off_down||0)]),
-      '',
-      csvRowT(['--- [设备明细] ---']),
-      csvRow(['设备名称','MAC地址','IP地址','状态/接口','高精上行','高精下行','积分上行','积分下行','官方上行','官方下行']),
-      ...Object.entries(sp.devices || {}).map(d => csvRow([d[1].name,d[0],d[1].ip,d[1].status,Math.round(d[1].up||0),Math.round(d[1].down||0),Math.round(d[1].integral_up||0),Math.round(d[1].integral_down||0),Math.round(d[1].raw_up||0),Math.round(d[1].raw_down||0)])),
-            '',
+    const 读档说明 = ' （含路由器后台读档）';
+    /* @BroTech-Reserved csv-report.part.js */
       csvRow(['Bro-Stat@哥哥科技 https://space.bilibili.com/501430041']),
       csvRow(['项目主页: https://github.com/ucxn/Mi-Stat_Max']),
       csvRow(['脚本下载: https://scriptcat.org/users/203510'])
@@ -537,17 +521,13 @@ async function rSD() {
     );
   }
 function doSettle(nowMs) {
-    /* @BroTech-Reserved settle-all-01.part.js */
+    /* @BroTech-Reserved settle-export.part.js */
     GM_setValue('ha_snapshot', { timestamp: nowMs, global: {}, devices: {} }); S.snap = {}; S.cSnap = null;
     S.wTotUp = S.wTotDn = S.w2TotUp = S.w2TotDn = 0; // 内存原地清零
     for (let k in S.cls) { let s = S.cls[k]; s.intUp = s.intDn = 0; s.uB = s.oU = s.lU; s.dB = s.oD = s.lD; s.hU.fill(0); s.hD.fill(0); } // 内存原地清零底表
-        document.getElementById('gb-w-bnr')?.remove(); // 预警横幅
-    S.calcTime(Math.max(nowMs, S.Force_MS - CONFIG.自动导出 * 60000 + 1000) + CONFIG.时区补偿); // 瞬间算出下月/下周新线
-    window.gegeForceUIRedraw = !0; // 重绘 UI
-    setTimeout(() => { S._RST = !1; }, 2000); // 解开安全锁
   }
 
-/* @BroTech-Reserved stage-ratio.part.js */
+  /* @BroTech-Reserved stage-ratio.part.js */
   const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
   function getSpark(ringArr, headIdx, maxVal, minVal = 0) {
     let s = "";
@@ -557,7 +537,7 @@ function doSettle(nowMs) {
     }
     return s;
   }
-  /* @BroTech-Reserved speed-chart-core.part.js */
+      /* @BroTech-Reserved speed-chart.part.js */
 
   function rUI(wU, wD, sU, sD, cI) {
     let tOD = 0,
@@ -776,54 +756,16 @@ if (typeof GM_setValue !== 'undefined' && S.rTick === 1) {
         let cache = it._gege || (it._gege = {});
         let hqU = Math.max(0, (cS.lU || 0) - (cS.uB || 0)),
         hqD = Math.max(0, (cS.lD || 0) - (cS.dB || 0));
-        /* @BroTech-Reserved rUI-nested-mi01-04.part.js */
-          (cache.rBoxUp ??= rB.querySelector('.v-interval .c-up')).textContent = '' + fSV(hqU);
-          (cache.rBoxDn ??= rB.querySelector('.v-interval .c-down')).textContent = '' + fSV(hqD);
-          const rtP = cache.rtPct ??= rB.querySelector('.v-rt-pct');
-          rtP.textContent = tC; rtP.style.color = tCol;
-          (cache.rBoxBar ??= rB.querySelector('.gege-ratio-bar-inner')).style.width = Math.min(bR, 100) + '%';
-                    
-          let dBx = cache.dBox ??= inf.querySelector('.gege-down-box');
-          if (!dBx) {
-            dBx = document.createElement('div'); dBx.className = 'gege-down-box';
-            dBx.innerHTML = `<div class="t-row c-down"><span>↓ <span class="v-vol"></span></span><span class="v-pct"></span></div><div class="zte-thin-bar"><div class="zte-thin-bar-inner down"></div></div>`;
-            inf.appendChild(dBx);
-            cache.dBox = dBx;
-          }
-          let dp = (cC.offDn || 0) * inv_tOD;
-          (cache.dBoxVol ??= dBx.querySelector('.v-vol')).textContent = fVD(cS.intDn, cC.offDn);
-                    (cache.dBoxPct ??= dBx.querySelector('.v-pct')).textContent = dp.toFixed(1) + '%';
-          (cache.dBoxBar ??= dBx.querySelector('.zte-thin-bar-inner')).style.width = Math.min(dp, 100) + '%';
-        }
+                        let tN = cache.timeNode ??= it.querySelector('.gege-online-time');
+        if (tN && cS.onS > 0) tN.textContent = `在线：${fOT(cS.onS)}`;
         
-        const sp = cache.speed ??= it.querySelector('.speed');
-        if (sp) {
-          let enh = cache.enh ??= sp.querySelector('.zte-enhance-speed');
-          if (!enh) {
-            sp.querySelectorAll('.connect-up, .connect-down').forEach(n => { n.style.display = 'none'; });
-            enh = document.createElement('div'); enh.className = 'zte-enhance-speed';
-            enh.innerHTML = `<div class="zte-bar-wrap zte-bar-up"><span class="v-val" style="white-space: nowrap; flex-shrink: 0;"></span><span class="v-spark" style="font-family: monospace; letter-spacing: -2px; font-size: 10px; margin: 0 6px; opacity: 0.65; white-space: pre; flex: 1; overflow: hidden; text-align: right;"></span><span class="v-pct" style="white-space: nowrap; flex-shrink: 0;"></span></div><div class="zte-bar-wrap zte-bar-down"><span class="v-val" style="white-space: nowrap; flex-shrink: 0;"></span><span class="v-spark" style="font-family: monospace; letter-spacing: -2px; font-size: 10px; margin: 0 6px; opacity: 0.65; white-space: pre; flex: 1; overflow: hidden; text-align: right;"></span><span class="v-pct" style="white-space: nowrap; flex-shrink: 0;"></span></div>`;
-            sp.appendChild(enh);
-            cache.enh = enh;
-          }
-          let pu = cC.upRate * inv_sU,
-              pd = cC.dnRate * inv_sD,
-              bU = cache.bU ??= enh.querySelector('.zte-bar-up'),
-              bD = cache.bD ??= enh.querySelector('.zte-bar-down');
-          
+        const dI = cache.devIntro ??= it.querySelector('.dev-intro');
+        /* @BroTech-Reserved device-card-official.part.js */
           let clU = (S.aWu * 0.1) || 0; if (clU < 512000) clU = 512000;
           let clD = (S.aWd * 0.125) || 0;
           for (let i = 0; i < 64; i++) { if (cS.hU[i] > clU) clU = cS.hU[i]; if (cS.hD[i] > clD) clD = cS.hD[i]; }
           (cache.bUSpk ??= bU.querySelector('.v-spark')).textContent = getSpark(cS.hU, cS.hIdx, clU, 73000);
           (cache.bDSpk ??= bD.querySelector('.v-spark')).textContent = getSpark(cS.hD, cS.hIdx, clD, 1000000);
-
-          bU.style.setProperty('--p-up', Math.min(pu, 100) + '%');
-          (cache.bUVal ??= bU.querySelector('.v-val')).textContent = `🔼 ${fBy(cC.upRate)}`;
-          (cache.bUPct ??= bU.querySelector('.v-pct')).textContent = pu.toFixed(1) + '%';
-          
-          bD.style.setProperty('--p-down', Math.min(pd, 100) + '%');
-          (cache.bDVal ??= bD.querySelector('.v-val')).textContent = `🔽 ${fBy(cC.dnRate)}`;
-          (cache.bDPct ??= bD.querySelector('.v-pct')).textContent = pd.toFixed(1) + '%';
         }
       }
     });

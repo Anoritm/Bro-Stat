@@ -259,7 +259,10 @@ let _saved = null;
   }
 
   const st = document.createElement('style');
-  /* @BroTech-Reserved style-nested-p01-01.part.js */
+    st.innerHTML = `/* @BroTech-Reserved style-panel.part.js */
+    `;
+  document.head.
+  appendChild(st);
   window.gegeRenderedMacs = new Set();
   let gTD = p => { const v = _w.document.querySelector('#app')?.__vue__; if (!v?.$getData) return; gTD = v.$getData.bind(v); return gTD(p); };
   function fCH() {
@@ -380,16 +383,22 @@ async function rSD(wantWan = !0, wantLan = !0) {
     }
 
   function buildCSV() {
-    /* @BroTech-Reserved buildCSV-nested-p01-01.part.js */
+    const 读档说明 = ' （含本地历史读档）';
+    /* @BroTech-Reserved csv-report.part.js */
+      csvRow(['Bro-Stat@哥哥科技 https://space.bilibili.com/501430041']),
+      csvRow(['项目主页: https://github.com/ucxn/Bro-Stat']),
+      csvRow(['脚本下载: https://scriptcat.org/users/203510'])
+    ].join('\r\n'))(
+      S.cSnap || {},
+      S.cSnap?.timestamp || Date.now(),
+      (CONFIG.readSaveData !== 0 && typeof GM_getValue !== 'undefined' ? GM_getValue('gege_reset_ms', null) : null) || performance.timeOrigin || Date.now()
+    );
+  }
 function doSettle(nowMs) {
-    /* @BroTech-Reserved settle-all-01.part.js */
+    /* @BroTech-Reserved settle-export.part.js */
     GM_setValue('ha_snapshot', { timestamp: nowMs, global: {}, devices: {} }); _saved = null; S.cSnap = null;
     S.wTotUp = S.wTotDn = 0; // 内存原地清零
     for (let k in S.cls) { let s = S.cls[k]; s.intUp = s.intDn = 0; s.hU.fill(0); s.hD.fill(0); } // 内存原地清零底表
-        document.getElementById('gb-w-bnr')?.remove(); // 预警横幅
-    S.calcTime(Math.max(nowMs, S.Force_MS - CONFIG.自动导出 * 60000 + 1000) + CONFIG.时区补偿); // 瞬间算出下月/下周新线
-    window.gegeForceUIRedraw = !0; // 重绘 UI
-    setTimeout(() => { S._RST = !1; }, 2000); // 解开安全锁
   }
 
 const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
@@ -402,25 +411,16 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
         return s;
       }
 
-      /* @BroTech-Reserved speed-chart-core.part.js */
+      /* @BroTech-Reserved speed-chart.part.js */
       const gPSvg = rate => {
         const c = rate === 10 ? '#E7B05C' : rate === 100 ? '#5394CC' : rate === 1000 ? '#4CAF50' : '';
-        if (c) return /* @BroTech-Reserved icon-wired-active-svg.part.js */;
-        return /* @BroTech-Reserved icon-wired-default-svg.part.js */;
+        if (c) return `<svg viewBox="0 0 100 100" width="45" height="45" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(180 50 50)"><path d="M18 82V36Q18 32 22 32H28V24Q28 20 32 20H38V14Q38 10 42 10H58Q62 10 62 14V20H68Q72 20 72 24V32H78Q82 32 82 36V82Q82 86 78 86H22Q18 86 18 82Z" fill="${c}" fill-opacity=".10" stroke="${c}" stroke-width="4" stroke-linejoin="round"/><g stroke="${c}" stroke-width="3.2" stroke-linecap="round"><path d="M31 54V76"/><path d="M36.5 54V76"/><path d="M42 54V76"/><path d="M47.5 54V76"/><path d="M53 54V76"/><path d="M58.5 54V76"/><path d="M64 54V76"/><path d="M69.5 54V76"/></g></g></svg>`;
+        return `<svg viewBox="0 0 100 100" width="45" height="45"><rect x="15" y="15" width="70" height="65" rx="5" fill="#cfd8dc" stroke="#90a4ae" stroke-width="4"/><path d="M 25,25 L 75,25 L 75,60 L 60,60 L 60,75 L 40,75 L 40,60 L 25,60 Z" fill="#263238"/><g fill="#ffca28"><rect x="30" y="25" width="2.5" height="18"/><rect x="35" y="25" width="2.5" height="18"/><rect x="40" y="25" width="2.5" height="18"/><rect x="45" y="25" width="2.5" height="18"/><rect x="52.5" y="25" width="2.5" height="18"/><rect x="57.5" y="25" width="2.5" height="18"/><rect x="62.5" y="25" width="2.5" height="18"/><rect x="67.5" y="25" width="2.5" height="18"/></g><circle cx="21" cy="73" r="3.5" fill="#4caf50"/><circle cx="79" cy="73" r="3.5" fill="#ffb300"/></svg>`;
       };
+      const 信号档位 = [-41, -46, -50, -56, -61, -68, -71, -75, -78, -85];
       const gWSvg = r => {
         const c = r > -24 ? '#4caf50' : r > -35 ? '#9c27b0' : '#0059fa';
-        if (r > -41) return `<svg viewBox="0 0 100 100" width="45" height="45"><path d="M 50,85 L 10,35 A 65,65 0 0,1 90,35 Z" fill="${c}"/></svg>`;
-        if (r > -46) return /* @BroTech-Reserved icon-wifi-high-svg.part.js */;
-        if (r > -50) return /* @BroTech-Reserved icon-wifi-good-svg.part.js */;
-        if (r > -56) return /* @BroTech-Reserved icon-wifi-three-ring-svg.part.js */;
-        if (r > -61) return /* @BroTech-Reserved icon-wifi-two-ring-svg.part.js */;
-        if (r > -68) return /* @BroTech-Reserved icon-wifi-one-ring-svg.part.js */;
-        if (r > -71) return /* @BroTech-Reserved icon-wifi-edge-svg.part.js */;
-        if (r > -75) return /* @BroTech-Reserved icon-wifi-warning-yellow-svg.part.js */;
-        if (r > -78) return /* @BroTech-Reserved icon-wifi-warning-orange-svg.part.js */;
-        if (r > -85) return /* @BroTech-Reserved icon-wifi-question-svg.part.js */;
-        return /* @BroTech-Reserved icon-wifi-lost-svg.part.js */;
+    /* @BroTech-Reserved wifi-signal-icons.part.js */
       };
 
   function rUI(wU, wD, sU, sD, cI, wanTick) {
@@ -472,17 +472,7 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
             try { GM_setValue('ha_snapshot', S.cSnap); } catch (e) { console.warn(e); }
             Promise.resolve(gTD({modules:"ethPortStatus",timerRefresh:1})).then(d => { if (d?.ethPortStatus) S.pI = d.ethPortStatus; }).catch(e => console.warn("[哥哥科技/Tenda] 物理网口探测异常:", e));
           }
-          if (nowMs >= S.Force_MS && !S._RST) {
-            doSettle(nowMs);
-          } else if (nowMs >= S.Warn_MS && !document.getElementById('gb-w-bnr')) {
-            let bd = document.getElementById('zte-geek-board');
-            if (bd) {
-              let bn = document.createElement('div'); bn.id = 'gb-w-bnr';
-              bn.style.cssText = 'background:#fff3cd;color:#856404;padding:10px 15px;margin-bottom:10px;border-radius:6px;border-left:5px solid #ffc107;font-weight:bold;font-size:13px;display:flex;justify-content:space-between;align-items:center;width:100%;box-sizing:border-box;';
-              bn.innerHTML = `<span> 统计周期即将结束，流量将在跨越边界时自动清零备份。</span><button id="gb-f-btn" style="background:#ffc107;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-weight:bold;color:#333;">立即导出并清零</button>`;
-              bd.insertBefore(bn, bd.firstChild);
-              document.getElementById('gb-f-btn').onclick = () => doSettle(Date.now());}
-          }
+          /* @BroTech-Reserved settle-banner.part.js */
       }
         S.aWu = (S.wTotUp - (S.lwTU || S.wTotUp)) / (CONFIG.wanRefreshInterval * 4); S.lwTU = S.wTotUp;
         S.aWd = (S.wTotDn - (S.lwTD || S.wTotDn)) / (CONFIG.wanRefreshInterval * 4); S.lwTD = S.wTotDn;
@@ -495,9 +485,9 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
     if (!bd) {
       bd = document.createElement('div');
       bd.id = 'zte-geek-board';
-/* @BroTech-Reserved board-layout.part.js */
+        /* @BroTech-Reserved board-layout.part.js */
         layoutHtml += `<div class="geek-row" id="gb-phys-row" style="display:none;height:auto!important;flex-wrap:wrap;"><span class="geek-label" style="font-weight:normal;color:#666;">物理网口</span><div class="geek-val-box" id="gb-phys-data" style="flex-wrap:wrap;font-size:13px;font-weight:normal;"></div></div>`;
-/* @BroTech-Reserved board-mount.part.js */
+        /* @BroTech-Reserved board-mount.part.js */
         setText('#gb-wan-up-bytes', `🔼 ${fB(wU)}`);
         setText('#gb-wan-down-bytes', `🔽 ${fB(wD)}`);
         setText('#gb-wan-up-bps', `🔼 ${fBy(wU)}`);
@@ -547,7 +537,24 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
         const rN = cache.rssiNode ??= (cache.devIntro ??= it.querySelector('.dev-intro'))?.querySelector('.gege-rssi');
         if (rN) { const p = Math.round((cC.rssi - (cC.iface === '2.4G' ? S.RSSI频率修正 || 0 : 0)) * 1.6666666666666667 + 133.33333333333334); rN.innerHTML = cC.iface === 'wire' ? escapeHTML(cC.vendor || '') : cC.rssi ? `<span style="color:${p < 0?'#ff4c00':'inherit'}">${p}%</span>, ${cC.rssi}` : ''; }
         
-/* @BroTech-Reserved rui-device-bars.part.js */
+        const hqU = cS.intUp || 0; 
+        const hqD = cS.intDn || 0;
+        const tN = cache.timeNode ??= it.querySelector('.gege-online-time');
+        if (tN && cS.onS > 0) tN.textContent = `在线：${fOT(cS.onS)}`;
+        
+        const dI = cache.devIntro ??= it.querySelector('.dev-intro');
+        const inf = cache.info ??= it.querySelector('.info');
+
+        /* @BroTech-Reserved device-card-integral.part.js */
+          let clU = (S.aWu * 0.1) || 0; if (clU < 512000) clU = 512000;
+          let clD = (S.aWd * 0.125) || 0;
+          for (let i = 0; i < 128; i++) { if (cS.hU[i] > clU) clU = cS.hU[i]; if (cS.hD[i] > clD) clD = cS.hD[i]; }
+          (cache.bUSpk ??= bU.querySelector('.v-spark')).textContent = getSpark(cS.hU, cS.hIdx, clU);
+          (cache.bDSpk ??= bD.querySelector('.v-spark')).textContent = getSpark(cS.hD, cS.hIdx, clD);
+        }
+      }
+    });
+  }
   async function bVD(ol, cI) {
     try {
       let h2 = [], h5 = [], h6 = [], hW = [];

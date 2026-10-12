@@ -286,7 +286,10 @@ const F_ARR_8 = ['0', '[1/8]', '[2/8]', '[3/8]', '[4/8]', '[5/8]', '[6/8]', '[7/
   }
 
   const st = document.createElement('style');
-  /* @BroTech-Reserved style-nested-p01-01.part.js */
+    st.innerHTML = `/* @BroTech-Reserved style-panel.part.js */
+    `;
+  document.head.
+  appendChild(st);
   window.gegeRenderedMacs = new Set();
   const TP_WAN_REQUEST = { network: { name: ["wan_status", "wan_status_2"] }, method: "get" };
   const TP_HOST_REQUEST = { hosts_info: { table: "online_host" }, method: "get" };
@@ -476,19 +479,25 @@ async function rSD() {
     }
 
   function buildCSV() {
-    /* @BroTech-Reserved buildCSV-nested-p01-01.part.js */
+    const 读档说明 = ' （含本地历史读档）';
+    /* @BroTech-Reserved csv-report.part.js */
+      csvRow(['Bro-Stat@哥哥科技 https://space.bilibili.com/501430041']),
+      csvRow(['项目主页: https://github.com/ucxn/Bro-Stat']),
+      csvRow(['脚本下载: https://scriptcat.org/users/203510'])
+    ].join('\r\n'))(
+      S.cSnap || {},
+      S.cSnap?.timestamp || Date.now(),
+      (CONFIG.readSaveData !== 0 && typeof GM_getValue !== 'undefined' ? GM_getValue('gege_reset_ms', null) : null) || performance.timeOrigin || Date.now()
+    );
+  }
 function doSettle(nowMs) {
-    /* @BroTech-Reserved settle-all-01.part.js */
+    /* @BroTech-Reserved settle-export.part.js */
     GM_setValue('ha_snapshot', { timestamp: nowMs, global: {}, devices: {} }); _saved = null; S.cSnap = null;
         S.wTotUp = S.wTotDn = S.w2TotUp = S.w2TotDn = 0; // 内存原地清零
     for (let k in S.cls) { let s = S.cls[k]; s.intUp = s.intDn = 0; s.uB = s.oU = s.lU; s.dB = s.oD = s.lD; s.hU.fill(0); s.hD.fill(0); } // 内存原地清零底表
-        document.getElementById('gb-w-bnr')?.remove(); // 预警横幅
-    S.calcTime(Math.max(nowMs, S.Force_MS - CONFIG.自动导出 * 60000 + 1000) + CONFIG.时区补偿); // 瞬间算出下月/下周新线
-    window.gegeForceUIRedraw = !0; // 重绘 UI
-    setTimeout(() => { S._RST = !1; }, 2000); // 解开安全锁
   }
 
-/* @BroTech-Reserved stage-ratio.part.js */
+  /* @BroTech-Reserved stage-ratio.part.js */
 
 const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
       function getSpark(ringArr, headIdx, maxVal) {
@@ -500,7 +509,7 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
         return s;
       }
 
-      /* @BroTech-Reserved speed-chart-core.part.js */
+      /* @BroTech-Reserved speed-chart.part.js */
   function rUI(wU, wD, sU, sD, cI) {
     let LUp = 0, LDn = 0, hpU = 0, hpD = 0;
     for (let k in S.cls) {
@@ -555,17 +564,8 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
           try { GM_setValue('ha_snapshot', S.cSnap); } catch(e) {console.warn(e);}
         }
         let nowMs = Date.now();
-          if (nowMs >= S.Force_MS && !S._RST) {
-            doSettle(nowMs);
-          } else if (nowMs >= S.Warn_MS && !document.getElementById('gb-w-bnr')) {
-            let bd = document.getElementById('zte-geek-board');
-            if (bd) {
-              let bn = document.createElement('div'); bn.id = 'gb-w-bnr';
-              bn.style.cssText = 'background:#fff3cd;color:#856404;padding:10px 15px;margin-bottom:10px;border-radius:6px;border-left:5px solid #ffc107;font-weight:bold;font-size:13px;display:flex;justify-content:space-between;align-items:center;width:100%;box-sizing:border-box;';
-              bn.innerHTML = `<span> 统计周期即将结束，流量将在跨越边界时自动清零备份。</span><button id="gb-f-btn" style="background:#ffc107;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-weight:bold;color:#333;">立即导出并清零</button>`;
-              bd.insertBefore(bn, bd.firstChild);
-              document.getElementById('gb-f-btn').onclick = () => doSettle(Date.now());}
-          }}
+          /* @BroTech-Reserved settle-banner.part.js */
+        }
       }
       S.aWu = (S.wTotUp - (S.lwTU || S.wTotUp)) / (CONFIG.wanRefreshInterval << 2); S.lwTU = S.wTotUp;
       S.aWd = (S.wTotDn - (S.lwTD || S.wTotDn)) / (CONFIG.wanRefreshInterval << 2); S.lwTD = S.wTotDn;
@@ -582,8 +582,8 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
     if (!bd) {
       bd = document.createElement('div');
       bd.id = 'zte-geek-board';
-/* @BroTech-Reserved board-layout.part.js */
-/* @BroTech-Reserved board-mount.part.js */
+        /* @BroTech-Reserved board-layout.part.js */
+        /* @BroTech-Reserved board-mount.part.js */
         let aW2U = S.hasW2 ? S.w2U : undefined, aW2D = S.hasW2 ? S.w2D : undefined, aW2TU = S.hasW2 ? S.w2TotUp : undefined, aW2TD = S.hasW2 ? S.w2TotDn : undefined;
         setText('#gb-wan-up-bytes', `🔼 ${fBy(wU + (aW2U||0))}`);
         setText('#gb-wan-down-bytes', `🔽 ${fBy(wD + (aW2D||0))}`);
@@ -626,7 +626,24 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
               cS = S.cls[m] || { intUp: 0, intDn: 0, onS: 0 };
         
         let cache = it._gege || (it._gege = {});
-/* @BroTech-Reserved rui-device-bars.part.js */
+        const hqU = cS.intUp || 0; 
+        const hqD = cS.intDn || 0;
+        const tN = cache.timeNode ??= it.querySelector('.gege-online-time');
+        if (tN && cS.onS > 0) tN.textContent = `在线：${fOT(cS.onS)}`;
+        
+        const dI = cache.devIntro ??= it.querySelector('.dev-intro');
+        const inf = cache.info ??= it.querySelector('.info');
+
+        /* @BroTech-Reserved device-card-integral.part.js */
+          let clU = (S.aWu * 0.1) || 0; if (clU < 512000) clU = 512000;
+          let clD = (S.aWd * 0.125) || 0;
+          for (let i = 0; i < 128; i++) { if (cS.hU[i] > clU) clU = cS.hU[i]; if (cS.hD[i] > clD) clD = cS.hD[i]; }
+          (cache.bUSpk ??= bU.querySelector('.v-spark')).textContent = getSpark(cS.hU, cS.hIdx, clU);
+          (cache.bDSpk ??= bD.querySelector('.v-spark')).textContent = getSpark(cS.hD, cS.hIdx, clD);
+        }
+      }
+    });
+  }
   async function bVD(ol, cI) {
     try {
       let h2 = [], h52 = [], h58 = [], hW = [];
