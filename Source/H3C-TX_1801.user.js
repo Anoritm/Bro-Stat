@@ -248,22 +248,7 @@ let _saved = null;
     if (bits >= 8192) return `${(bits / 8192).toFixed(1)}K`;
     return `${Math.round(bits / 8)}B`;}
 
-  function fOT(totalSec) {
-		totalSec = Math.floor(totalSec);
-        if (totalSec < 0) return "";
-		const d = Math.floor(totalSec / 86400);
-		let r = totalSec - d * 86400;
-		const h = Math.floor(r / 3600);
-		r = r - h * 3600;
-		const m = Math.floor(r / 60);
-		const s = r - m * 60;
-        return d > 0 
-        ? `${d}天${h}时${m}分${s}秒` 
-        : `${h}小时${m}分${s}秒`;}
-
-  function nM(m) {
-    return m ? m.toLowerCase().replace(/-/g, ':').replace(/\s/g, '') : '';
-  }
+  /* @BroTech-Reserved text-utils.part.js */
   function 取名单项(t, 名) {
     let m = t.match(new RegExp('var\\s+' + 名 + '\\s*=\\s*new\\s+Array\\(([\\s\\S]*?)\\);'));
     return m ? (m[1].match(/"[^"]*"|'[^']*'/g) || []) : [];
@@ -296,7 +281,6 @@ let _saved = null;
     let c = s >= 1000 ? '#4CAF50' : s >= 100 ? '#5394CC' : s > 0 ? '#E7B05C' : '#7b8aa0';
     return `<svg viewBox="0 0 100 100" width="45" height="45" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(180 50 50)"><path d="M18 82V36Q18 32 22 32H28V24Q28 20 32 20H38V14Q38 10 42 10H58Q62 10 62 14V20H68Q72 20 72 24V32H78Q82 32 82 36V82Q82 86 78 86H22Q18 86 18 82Z" fill="${c}" fill-opacity=".10" stroke="${c}" stroke-width="4" stroke-linejoin="round"/><g stroke="${c}" stroke-width="3.2" stroke-linecap="round"><path d="M31 54V76"/><path d="M36.5 54V76"/><path d="M42 54V76"/><path d="M47.5 54V76"/><path d="M53 54V76"/><path d="M58.5 54V76"/><path d="M64 54V76"/><path d="M69.5 54V76"/></g></g></svg>`;
   }
-  const 信号档位 = [-40, -46, -50, -56, -61, -67, -72, -76, -80, -85];
   function 取设备图标(信号, 有线, 速率 = 0) {
     if (有线) return 取网口图标(速率);
     let r = 信号 | 0, c = r > -24 ? '#4caf50' : r > -35 ? '#9c27b0' : '#0059fa';
@@ -360,7 +344,7 @@ let _saved = null;
   const st = document.createElement('style');
   st.innerHTML = `/* @BroTech-Reserved style-panel.part.js */
     .gege-pkt-line{color:#666;font-size:11.5px;font-family:system-ui, sans-serif;line-height:1.35;white-space:normal}.dev-title-line{display:flex;align-items:center;justify-content:space-between;gap:10px;width:95%;}.dev-title-line .dev-name-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.gege-rssi{font-size:11.5px;font-weight:normal;color:#666;margin-left:2em;white-space:nowrap;flex-shrink:0;}
-    .config-item .dev-intro{min-height:20px;}@media (min-width:769px){.config-item-box{padding-bottom:4px!important}.gege-list-item{padding:6px 10px!important}}
+    @media (min-width:769px){.config-item-box{padding-bottom:4px!important}.gege-list-item{padding:6px 10px!important}}
     `;
   document.
   head.
@@ -659,32 +643,7 @@ const ts = Date.now();
                 <div class="geek-row"><span class="geek-label">WAN总计：</span><div class="geek-val-box"><span class="c-up geek-fixed-width" id="gb-wan-up-vol" title="高精积分存档"></span><span class="c-down geek-fixed-width" id="gb-wan-down-vol" title="高精积分存档"></span></div><div class="geek-right-box"><span style="font-weight: normal;">总官方：</span><span class="c-up" id="gb-owan-up-vol"></span> | <span class="c-down" id="gb-owan-down-vol"></span></div></div>
                 <div class="geek-row"><span class="geek-label">LAN：<span id="gege-pin-btn" class="gege-pin" title="冻结窗格">📌</span></span><div class="geek-val-box"><span class="c-up geek-fixed-width" id="gb-lan-up-vol"></span><span class="c-down geek-fixed-width" id="gb-lan-down-vol"></span><span id="gb-packet-line" style="font-weight:bold;margin-left:5px;white-space:nowrap;"></span></div><div class="geek-right-box"></div></div>`;
         }
-                bd.innerHTML = layoutHtml;
-        let pinBtn = bd.querySelector('#gege-pin-btn');
-        if (pinBtn) {
-            if (S.isPinned) {
-                bd.classList.add('geek-frozen-pane');
-                pinBtn.classList.add('active');
-            }
-            pinBtn.onclick = () => {
-                S.isPinned = !S.isPinned;
-                bd.classList.toggle('geek-frozen-pane', S.isPinned);
-                pinBtn.classList.toggle('active', S.isPinned);
-            };
-        }
-    }
-    let ol = document.getElementById('gege-global-overlay'),
-      iPO = ol && ol.style.display === 'block',
-      aC = iPO ? ol : document;
-    requestAnimationFrame(() => {
-    if (iPO) {
-      let ac = document.getElementById('gege-board-anchor');
-      if (ac && bd.nextSibling !== ac) ac.parentNode.insertBefore(bd, ac);
-    }
-    else {
-      let mn = document.querySelector('.el-table') || document.querySelector('.config-item')?.closest('div') || document.querySelector('.main-content');
-      if (mn && bd.parentNode !== mn.parentNode) mn.parentNode.insertBefore(bd, mn);
-    }
+                /* @BroTech-Reserved board-pin-anchor.part.js */
   
     let 面板状态 = iPO ? '悬浮' : '原生', oDC = S.DOM缓存;
     if (!oDC || S.DOM已重建 || S.面板状态 !== 面板状态) {
@@ -838,24 +797,7 @@ const ts = Date.now();
     document.body.appendChild(b);
   };
   window.gegeTogglePanel = function (fS = null) {
-    let o = document.getElementById('gege-global-overlay');
-    let tS = fS !== null ? fS : !(o && o.style.display === 'block');
-    
-    if (!tS) {
-      if (o) o.style.display = 'none';
-      return;
-    }
-    
-    if (!o) {
-      o = document.createElement('div');
-      o.id = 'gege-global-overlay';
-      document.body.appendChild(o);
-    }
-    o.style.display = 'block';
-    if (!window.gegeBActivated) {
-      window.gegeBActivated = !0;
-      clearTimeout(window.gegeMasterTimer);
-      window.gegeMasterTimer = setInterval(rSD, CONFIG.lanRefreshInterval * 1000);
+    /* @BroTech-Reserved panel-toggle.part.js */
       
       fetch(`/wlan_ap_basic_5g.asp?_=${Date.now()}`)
       .then(r => r.arrayBuffer())
@@ -864,41 +806,10 @@ const ts = Date.now();
         let m = t.match(/var\s+curChannel\s*=\s*(\d+);/), 信道 = +(m?.[1] || 0);
         S.RSSI频率修正 = 信道 >= 32 && 信道 <= 177 ? 20 * Math.log10((5000 + 5 * 信道) / 2452) : 7.2;
         if (信道 >= 149 && 信道 <= 177 && !S.is5G_149) {
-          S.is5G_149 = !0;
+          S.is5G_149 = !0; CONFIG.portMap.wl1 = "5.8G";
           let ol = document.getElementById('gege-global-overlay');
           if (ol && ol.style.display === 'block') window.gegeForceUIRedraw = !0;
         }
       }).catch(e => { S.RSSI频率修正 = 7.2; console.warn("[H3C] 5G信道探测异常:", e); });
-    }
-    bVD(o, Object.create(null)).then(() => rSD());
-  };
-
-  window.gegeBActivated = !1;
-  window.gegeHiddenDevices = {};
-  window.gegeMasterTimer = null;
-  const tKA = () => {
-    let i = document.createElement('iframe');
-    i.id = 'gege-keepalive-iframe';
-    i.style.display = 'none';
-    const p = ["/#/sys", "/#/app", "/#/wlan/"];
-    i.src = `${window.location.origin}${p[Math.floor(Math.random()*p.length)]}`;
-    let z = document.getElementById('gege-keepalive-iframe');
-    if (z) z.remove();
-    document.body.appendChild(i);
-    setTimeout(() => {
-      if (i.parentNode) {
-        i.src = 'about:blank';
-        i.remove();
-      }
-    }, 12000);
-  };
-  setTimeout(tKA, 2000);
-  setInterval(tKA, 720000);
-  const _initUI = () => {
-    if (CONFIG.injectMode === 3 || (CONFIG.injectMode === 1 && +(window.location.hostname.slice(window.location.hostname.lastIndexOf('.') + 1)) < 6)) {
-      if (window.createGegeFloatingBtn) window.createGegeFloatingBtn();
-    }
-  };
-
-  if (document.readyState === 'complete') _initUI(); else window.addEventListener('load', _initUI);
+    /* @BroTech-Reserved panel-boot.part.js */
 })();

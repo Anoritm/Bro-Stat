@@ -261,22 +261,7 @@ const F_ARR_8 = ['0', '[1/8]', '[2/8]', '[3/8]', '[4/8]', '[5/8]', '[6/8]', '[7/
     if (bits >= 8192) return `${(bits / 8192).toFixed(1)}K`;
     return `${Math.round(bits / 8)}B`;}
 
-  function fOT(totalSec) {
-		totalSec = totalSec | 0;
-        if (totalSec < 0) return "";
-		const d = (totalSec / 86400) | 0;
-		let r = totalSec - d * 86400;
-		const h = (r / 3600) | 0;
-		r = r - h * 3600;
-		const m = (r / 60) | 0;
-		const s = r - m * 60;
-        return d > 0
-        ? `${d}天${h}时${m}分${s}秒` 
-        : `${h}小时${m}分${s}秒`;}
-
-  function nM(m) {
-    return m ? m.toLowerCase().replace(/-/g, ':').replace(/\s/g, '') : '';
-  }
+  /* @BroTech-Reserved text-utils.part.js */
 
   function dN(s) {
     if (!s) return '';
@@ -413,37 +398,13 @@ async function rSD() {
         } else {
           let dU = cC.offUp - cS.lU, dD = cC.offDn - cS.lD;
           if (cS.ifc !== cC.iface) { if (CONFIG.盲漫游 != 0) cS.aR = 1; if (CONFIG.盲漫游 === 1) cS.aR = 2; cS.ifc = cC.iface; }
-          if (dU < 0 || dD < 0) {
-            if (dU < 0) {
-              cS.uB += dU;
-              cS.oU += dU;
-              cS.dpU = cS.lU;
-            }
-            if (dD < 0) {
-              cS.dB += dD;
-              cS.oD += dD;
-              cS.dpD = cS.lD;
-            }
-            cS.aR = 3;
-          }
-          else if (cS.aR === 3) {
-            if (dU > 0 || dD > 0) {
-            if (cS.dpU && dU >= cS.dpU && cS.dpD && dD >= cS.dpD) {
+          /* @BroTech-Reserved counter-guard-head.part.js */
+            cS.dpU && dU > cS.dpU && cS.dpD && dD > cS.dpD
+          ) {
               if (dU < cS.dpU * 1.1 || dU < cS.dpU + CONFIG.宽带最大外网上行速率 * CONFIG.lanRefreshInterval) {
                 cS.uB += cS.dpU; cS.oU += cS.dpU;
-                } else {
-                  cS.uB += dU; cS.oU += dU; cS.dB += dD; cS.oD += dD; }
-               if (dD < cS.dpD * 1.1 || dD < cS.dpD + CONFIG.宽带最大外网下行速率 * CONFIG.lanRefreshInterval) {
-                cS.dB += cS.dpD; cS.oD += cS.dpD;
-                } else {cS.dB += dD; cS.oD += dD;
-                }
-              cS.aR = 2; if (CONFIG.盲漫游 === undefined) CONFIG.盲漫游 = 1;
-              } else {
-                cS.aR = 0; 
-              }
-              cS.dpU = 0; cS.dpD = 0; 
-            }
-          }
+              } else { cS.uB += dU; cS.oU += dU; cS.dB += dD; cS.oD += dD; }
+              /* @BroTech-Reserved counter-guard-tail.part.js */
           else if (cS.aR > 0) { cS.aR--; }
           if (cS.aR === 2 || (cS.aR == 1 && cC.upRate > CONFIG.宽带最大外网上行速率 * 0.6) || cC.upRate > 6e8) { cSU -= cC.upRate; cC.upRate = 0.5; }
           if (cS.aR === 2 || (cS.aR == 1 && cC.dnRate > CONFIG.宽带最大外网下行速率 * 0.6) || cC.dnRate > 24e8) { cSD -= cC.dnRate; cC.dnRate = 0.5; }
@@ -478,20 +439,7 @@ async function rSD() {
     }
     }
 
-  function buildCSV() {
-    const 读档说明 = ' （含本地历史读档）';
-    /* @BroTech-Reserved csv-report.part.js */
-      csvRow(['Bro-Stat@哥哥科技 https://space.bilibili.com/501430041']),
-      csvRow(['项目主页: https://github.com/ucxn/Bro-Stat']),
-      csvRow(['脚本下载: https://scriptcat.org/users/203510'])
-    ].join('\r\n'))(
-      S.cSnap || {},
-      S.cSnap?.timestamp || Date.now(),
-      (CONFIG.readSaveData !== 0 && typeof GM_getValue !== 'undefined' ? GM_getValue('gege_reset_ms', null) : null) || performance.timeOrigin || Date.now()
-    );
-  }
-function doSettle(nowMs) {
-    /* @BroTech-Reserved settle-export.part.js */
+  /* @BroTech-Reserved csv-settle-head.part.js */
     GM_setValue('ha_snapshot', { timestamp: nowMs, global: {}, devices: {} }); _saved = null; S.cSnap = null;
         S.wTotUp = S.wTotDn = S.w2TotUp = S.w2TotDn = 0; // 内存原地清零
     for (let k in S.cls) { let s = S.cls[k]; s.intUp = s.intDn = 0; s.uB = s.oU = s.lU; s.dB = s.oD = s.lD; s.hU.fill(0); s.hD.fill(0); } // 内存原地清零底表
@@ -499,15 +447,7 @@ function doSettle(nowMs) {
 
   /* @BroTech-Reserved stage-ratio.part.js */
 
-const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
-      function getSpark(ringArr, headIdx, maxVal) {
-        let s = "";
-        for (let i = 64; i--; ) {
-          let v = ringArr[(headIdx - i) & 127];
-          s += SPRK[v > 0 ? Math.min(7, Math.max(1, ((v / maxVal) * 7) | 0)) : 0];
-        }
-        return s;
-      }
+/* @BroTech-Reserved spark-text.part.js */
 
       /* @BroTech-Reserved speed-chart.part.js */
   function rUI(wU, wD, sU, sD, cI) {
@@ -523,26 +463,7 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
       hpU += sessU; 
       hpD += sessD;
     }
-    S.cSnap = {
-            timestamp: Date.now(),
-      global: {
-        wan_up: S.wTotUp,
-        wan_down: S.wTotDn,
-        lan_integral_up: LUp,
-        lan_integral_down: LDn,
-        lan_high_up: hpU,
-        lan_high_down: hpD
-            },
-      devices: Object.keys(S.cls).reduce((acc, k) => {
-        let s = S.cls[k], cC = cI[k];
-        acc[k] = {
-          up: s.intUp || 0,
-          down: s.intDn || 0,
-          integral_up: s.intUp || 0,
-          integral_down: s.intDn || 0,
-          status: cC ? (CONFIG.portMap[cC.iface] || cC.iface || "未知接口") : "off",
-          name: cC?.name || s.name || k,
-          ip: cC?.ip || "",
+    /* @BroTech-Reserved snapshot-integral.part.js */
           raw_up: cC?.offUp || 0,
           raw_down: cC?.offDn || 0
         };
@@ -564,7 +485,17 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
           try { GM_setValue('ha_snapshot', S.cSnap); } catch(e) {console.warn(e);}
         }
         let nowMs = Date.now();
-          /* @BroTech-Reserved settle-banner.part.js */
+          if (nowMs >= S.Force_MS && !S._RST) {
+            doSettle(nowMs);
+          } else if (nowMs >= S.Warn_MS && !document.getElementById('gb-w-bnr')) {
+            const bd = document.getElementById('zte-geek-board');
+            if (bd) {
+              const bn = document.createElement('div'); bn.id = 'gb-w-bnr';
+              bn.style.cssText = 'background:#fff3cd;color:#856404;padding:10px 15px;margin-bottom:10px;border-radius:6px;border-left:5px solid #ffc107;font-weight:bold;font-size:13px;display:flex;justify-content:space-between;align-items:center;width:100%;box-sizing:border-box;';
+              bn.innerHTML = `<span> 统计周期即将结束，流量将在跨越边界时自动清零备份。</span><button id="gb-f-btn" style="background:#ffc107;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-weight:bold;color:#333;">立即导出并清零</button>`;
+              bd.insertBefore(bn, bd.firstChild);
+              document.getElementById('gb-f-btn').onclick = () => doSettle(Date.now());}
+          }
         }
       }
       S.aWu = (S.wTotUp - (S.lwTU || S.wTotUp)) / (CONFIG.wanRefreshInterval << 2); S.lwTU = S.wTotUp;
@@ -605,42 +536,7 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
         } else {
             if (pb) pb.style.display = 'none'; if (pv) pv.style.display = 'none';
         }
-                if (bd.querySelector('#gb-ratio-display')) {
-          if (bd.querySelector('#gb-wan-zero-up')) {
-              setText('#gb-wan-zero-up', !S.wZEU ? '' : fSV(S.wZEU));
-              setText('#gb-wan-zero-down', !S.wZED ? '' : fSV(S.wZED));
-              setText('#gb-wan-zero-up-cnt', S.wZEUC || 0);
-              setText('#gb-wan-zero-down-cnt', S.wZEDC || 0);
-          }
-        }
-      }
-      const inv_boardUp = hpU > 0 ? 100 / hpU : 0;
-            const inv_LDn = LDn > 0 ? 100 / LDn : 0;
-      const inv_sU = sU > 0 ? 100 / sU : 0;
-      const inv_sD = sD > 0 ? 100 / sD : 0;
-
-      for (let m in cI) {
-        let it = oDC[m];
-        if (!it) continue;
-        const cC = cI[m] || { upRate: 0, dnRate: 0, iface: "", offUp: 0, offDn: 0 },
-              cS = S.cls[m] || { intUp: 0, intDn: 0, onS: 0 };
-        
-        let cache = it._gege || (it._gege = {});
-        const hqU = cS.intUp || 0; 
-        const hqD = cS.intDn || 0;
-        const tN = cache.timeNode ??= it.querySelector('.gege-online-time');
-        if (tN && cS.onS > 0) tN.textContent = `在线：${fOT(cS.onS)}`;
-        
-        const dI = cache.devIntro ??= it.querySelector('.dev-intro');
-        const inf = cache.info ??= it.querySelector('.info');
-
-        /* @BroTech-Reserved device-card-integral.part.js */
-          let clU = (S.aWu * 0.1) || 0; if (clU < 512000) clU = 512000;
-          let clD = (S.aWd * 0.125) || 0;
-          for (let i = 0; i < 128; i++) { if (cS.hU[i] > clU) clU = cS.hU[i]; if (cS.hD[i] > clD) clD = cS.hD[i]; }
-          (cache.bUSpk ??= bU.querySelector('.v-spark')).textContent = getSpark(cS.hU, cS.hIdx, clU);
-          (cache.bDSpk ??= bD.querySelector('.v-spark')).textContent = getSpark(cS.hD, cS.hIdx, clD);
-        }
+                /* @BroTech-Reserved device-loop-integral.part.js */
       }
     });
   }
@@ -686,55 +582,7 @@ const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
     document.body.appendChild(b);
   };
   window.gegeTogglePanel = function (fS = null) {
-    let o = document.getElementById('gege-global-overlay');
-    let tS = fS !== null ? fS : !(o && o.style.display === 'block');
-    
-    if (!tS) {
-      if (o) o.style.display = 'none';
-      return;
-        }
-    
-    if (!o) {
-      o = document.createElement('div');
-      o.id = 'gege-global-overlay';
-      document.body.appendChild(o);
-    }
-    o.style.display = 'block';
-if (!window.gegeBActivated) {
-      window.gegeBActivated = !0;
-      clearTimeout(window.gegeMasterTimer);
-      window.gegeMasterTimer = setInterval(rSD, CONFIG.lanRefreshInterval * 1000);
-    }
-    bVD(o, Object.create(null)).then(() => rSD());
-  };
-
-  window.gegeBActivated = !1;
-  window.gegeHiddenDevices = {};
-  window.gegeMasterTimer = null;
-  const tKA = () => {
-    let i = document.createElement('iframe');
-    i.id = 'gege-keepalive-iframe';
-    i.style.display = 'none';
-    const p = ["/#/sys", "/#/app", "/#/wlan/"];
-    i.src = `${window.location.origin}${p[Math.floor(Math.random()*p.length)]}`;
-        let z = document.getElementById('gege-keepalive-iframe');
-    if (z) z.remove();
-    document.body.appendChild(i);
-    setTimeout(() => {
-      if (i.parentNode) {
-        i.src = 'about:blank';
-        i.remove();
-      }
-    }, 12000);
-  };
-  setTimeout(tKA, 2000);
-  setInterval(tKA, 720000);
-  const _initUI = () => {
-        if (CONFIG.injectMode === 3 || (CONFIG.injectMode === 1 && +(window.location.hostname.slice(window.location.hostname.lastIndexOf('.') + 1)) < 6)) {
-      if (window.createGegeFloatingBtn) window.createGegeFloatingBtn();
-    }
-  };
-
-  if (document.readyState === 'complete') _initUI(); else window.addEventListener('load', _initUI);
+    /* @BroTech-Reserved panel-toggle.part.js */
+    /* @BroTech-Reserved panel-boot.part.js */
 
 })();

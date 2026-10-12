@@ -6,7 +6,7 @@ if (dI) {
             dI.appendChild(bx);
             cache.upBox = bx;
           }
-          let p = hqU * inv_tot_cU;
+          const p = hqU * inv_tot_cU;
           (cache.upVol ??= bx.querySelector('.v-vol')).textContent = fVD(cS.intUp, cC.offUp);
           (cache.upPct ??= bx.querySelector('.v-pct')).textContent = p.toFixed(1) + '%';
           (cache.upBar ??= bx.querySelector('.zte-thin-bar-inner')).style.width = Math.min(p, 100) + '%';
@@ -14,7 +14,7 @@ if (dI) {
         
         const inf = cache.info ??= it.querySelector('.info');
         if (inf) {
-                    let ipNode = cache.ipNode ??= inf.querySelector('.dev-ip');
+                    const ipNode = cache.ipNode ??= inf.querySelector('.dev-ip');
           if (ipNode) {
             let zBadge = cache.zBadge ??= ipNode.querySelector('.gege-zero-badge');
             if (!zBadge) {
@@ -37,13 +37,14 @@ if (dI) {
                         cache.rBox = rB;
           }
           
-          let bR = (hqU + hqD) > 0 ? (hqU * 100 / (hqU + hqD)) : 0, tC = "", tCol;
+          const bR = (hqU + hqD) > 0 ? (hqU * 100 / (hqU + hqD)) : 0;
+          let tC = "", tCol;
           if (CONFIG.calcMode === 1) {
-            let rt = hqD > 0 ? (hqU / hqD) : (hqU > 0 ? Infinity : 0);
+            const rt = hqD > 0 ? (hqU / hqD) : (hqU > 0 ? Infinity : 0);
             if (rt > CONFIG.ratioExtremeUp) { tCol = '#ff4c00'; tC = (rt === Infinity ? '∞' : rt.toFixed(2)) + '⚠️'; }
             else if (rt > CONFIG.ratioWarnUp) { tCol = '#ff4c00'; tC = (rt * 100).toFixed(1) + '%'; }
             else if (rt > CONFIG.ratioExtremeDown) { tCol = '#0059fa'; tC = (rt * 100).toFixed(1) + '%'; }
-            else { tCol = '#0059fa'; let rRt = hqU > 0 ? (hqD / hqU) : (hqD > 0 ? Infinity : 0); tC = (rRt === Infinity ? '∞' : rRt.toFixed(1)) + 'x'; }
+            else { tCol = '#0059fa'; const rRt = hqU > 0 ? (hqD / hqU) : (hqD > 0 ? Infinity : 0); tC = (rRt === Infinity ? '∞' : rRt.toFixed(1)) + 'x'; }
           } else {
             tCol = bR > CONFIG.ratioThreshold ? '#ff4c00' : '#0059fa';
             tC = bR.toFixed(1) + '%';
@@ -63,7 +64,7 @@ if (dI) {
             inf.appendChild(dBx);
             cache.dBox = dBx;
           }
-          let dp = (cC.offDn || 0) * inv_tOD;
+          const dp = (cC.offDn || 0) * inv_tOD;
           (cache.dBoxVol ??= dBx.querySelector('.v-vol')).textContent = fVD(cS.intDn, cC.offDn);
                     (cache.dBoxPct ??= dBx.querySelector('.v-pct')).textContent = dp.toFixed(1) + '%';
           (cache.dBoxBar ??= dBx.querySelector('.zte-thin-bar-inner')).style.width = Math.min(dp, 100) + '%';
@@ -79,7 +80,7 @@ if (dI) {
             sp.appendChild(enh);
             cache.enh = enh;
           }
-          let pu = cC.upRate * inv_sU,
+          const pu = cC.upRate * inv_sU,
               pd = cC.dnRate * inv_sD,
               bU = cache.bU ??= enh.querySelector('.zte-bar-up'),
               bD = cache.bD ??= enh.querySelector('.zte-bar-down');

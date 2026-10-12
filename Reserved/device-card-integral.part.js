@@ -1,7 +1,7 @@
 if (dI && inf) {
           let rB = cache.rBox ??= dI.querySelector('.gege-ratio-box');
           if (!rB) {
-            let oRB = inf.querySelector('.gege-ratio-box'); if (oRB) oRB.remove();
+            const oRB = inf.querySelector('.gege-ratio-box'); if (oRB) oRB.remove();
             rB = document.createElement('div'); rB.className = 'gege-ratio-box';
             rB.style.cssText = 'margin-top: 4px; width: 95%; margin-bottom: 2px;';
             rB.innerHTML = `<div class="gege-ratio-top"><span class="v-port"></span><span class="v-interval" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: normal; font-size: 12.5px; opacity: 0.75; letter-spacing: 0.5px;"><span class="c-up"></span><span style="color:#666; margin:0 3px;">，</span><span class="c-down"></span></span><span class="v-rt-pct"></span></div><div class="gege-ratio-bar"><div class="gege-ratio-bar-inner"></div></div>`;
@@ -21,15 +21,13 @@ if (dI && inf) {
             tCol = bR > CONFIG.ratioThreshold ? '#ff4c00' : '#0059fa';
             tC = bR.toFixed(1) + '%';
           }
-          let pNm = CONFIG.portMap[cC.iface] || cC.iface || "未知";
-          if (cC.iface === 'wl1' && S.is5G_149) pNm = "5.8G";
-          (cache.rBoxPort ??= rB.querySelector('.v-port')).textContent = pNm;
+          (cache.rBoxPort ??= rB.querySelector('.v-port')).textContent = CONFIG.portMap[cC.iface] || cC.iface || "未知";
                     (cache.rBoxUp ??= rB.querySelector('.v-interval .c-up')).textContent = '' + fSV(hqU);
           (cache.rBoxDn ??= rB.querySelector('.v-interval .c-down')).textContent = '' + fSV(hqD);
           const rtP = cache.rtPct ??= rB.querySelector('.v-rt-pct');
           rtP.textContent = tC; rtP.style.color = tCol;
           (cache.rBoxBar ??= rB.querySelector('.gege-ratio-bar-inner')).style.width = Math.min(bR, 100) + '%';
-                    let ipNode = cache.ipNode ??= inf.querySelector('.dev-ip');
+                    const ipNode = cache.ipNode ??= inf.querySelector('.dev-ip');
           if (ipNode) {
             let zBadge = cache.zBadge ??= ipNode.querySelector('.gege-zero-badge');
             if (!zBadge) {
@@ -44,7 +42,7 @@ if (dI && inf) {
           let bx = cache.upBox ??= inf.querySelector('.gege-up-box');
           if (!bx || bx.querySelector('.t-row')) {
             if (bx) bx.remove();
-            let oUB = dI.querySelector('.gege-up-box'); if (oUB) oUB.remove();
+            const oUB = dI.querySelector('.gege-up-box'); if (oUB) oUB.remove();
             bx = document.createElement('div'); bx.className = 'gege-up-box';
             bx.style.cssText = 'display:flex; align-items:center; width:95%; margin-top:0px; margin-bottom:2px;';
             bx.innerHTML = `<span class="v-vol" style="display:none;"></span><div class="zte-thin-bar" style="flex:1; margin:0;"><div class="zte-thin-bar-inner up"></div></div><span class="v-pct c-up" style="font-size:11.5px; font-weight:bold; font-family:system-ui, sans-serif; width:40px; text-align:right;"></span>`;
@@ -81,7 +79,7 @@ if (dI && inf) {
             sp.appendChild(enh);
             cache.enh = enh;
           }
-          let pu = cC.upRate * inv_sU,
+          const pu = cC.upRate * inv_sU,
               pd = cC.dnRate * inv_sD,
               bU = cache.bU ??= enh.querySelector('.zte-bar-up'),
               bD = cache.bD ??= enh.querySelector('.zte-bar-down');

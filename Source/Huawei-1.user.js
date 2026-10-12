@@ -254,34 +254,12 @@ function fBy(bps) {
     if (bits >= 8192) return `${(bits / 8192).toFixed(1)}K`;
     return `${Math.round(bits / 8)}B`;}
 
-  function fOT(totalSec) {
-		totalSec = totalSec | 0;
-        if (totalSec < 0) return "";
-		const d = (totalSec / 86400) | 0;
-		let r = totalSec - d * 86400;
-		const h = (r / 3600) | 0;
-		r = r - h * 3600;
-		const m = (r / 60) | 0;
-		const s = r - m * 60;
-        return d > 0 
-        ? `${d}天${h}时${m}分${s}秒` 
-        : `${h}小时${m}分${s}秒`;}
-
-  function nM(m) {
-    return m ? m.trim().toLowerCase().replaceAll('-', ':') : '';
-  }
+  /* @BroTech-Reserved text-utils.part.js */
 
   const st = document.createElement('style');
-  st.innerHTML = `.config-item{
-        clear:both;}.config-item-box{display:flex!important;
-        align-items:stretch!important;padding-bottom:
-        12px!important;}.config-item .logo{width:33%!important;
-        float:none!important;display:flex!important;flex-direction:row;}.config-item .dev-intro{flex:1;display:flex!important;flex-direction:column;justify-content:flex-start;min-height:100px;padding-bottom:0!important;margin-bottom:0!important;}.config-item .info{width:27%!important;float:none!important;display:flex!important;flex-direction:column;justify-content:flex-start;padding:0 10px!important;border-right:1px solid #eee;}.config-item .speed{width:40%!important;float:none!important;display:flex!important;flex-direction:column;justify-content:center;padding:0 10px!important;}.geek-row{display:flex;justify-content:space-between;align-items:center;white-space:nowrap;height:20px;}
-    .geek-label{width:110px;color:#333;font-weight:bold;}.geek-val-box{flex:1;display:flex;gap:15px;margin-left:10px;}.geek-fixed-width{display:inline-block;width:120px;}.geek-right-box{text-align:right;min-width:220px;font-weight:bold;}.c-up{color:#ff4c00;}.c-down{color:#0059fa;}.gege-up-box,.gege-down-box{margin-top:auto!important;margin-bottom:0!important;width:95%;}.gege-ratio-box{margin-top:10px;width:95%;margin-bottom:5px;}.t-row{font-size:12px;font-weight:bold;margin-bottom:2px;display:flex;justify-content:space-between;font-family:Consolas;}.zte-thin-bar{width:100%;height:3px;background:rgba(0,0,0,0.05);border-radius:1.5px;overflow:hidden;}.zte-thin-bar-inner{height:100%;transition:width 0.5s ease-out;}.zte-thin-bar-inner.up{background:#ff4c00;}.zte-thin-bar-inner.down{background:#0059fa;}.gege-ratio-top{display:flex;justify-content:space-between;font-size:12px;font-weight:bold;margin-bottom:2px;}.gege-ratio-bar{width:100%;height:4px;background:#0059fa;border-radius:2px;overflow:hidden;}.gege-ratio-bar-inner{height:100%;background:#ff4c00;transition:width 0.5s ease-out;}.zte-enhance-speed{display:flex;flex-direction:column;gap:6px;width:100%;font-family:Consolas;}
-    .zte-bar-wrap{position:relative;width:100%;border-radius:4px;border:1px solid;font-size:13px;font-weight:bold;overflow:hidden;padding:3px 8px;display:flex;justify-content:space-between;align-items:center;z-index:1;box-sizing:border-box;}.zte-bar-wrap span{font-size:inherit;font-weight:inherit;}.zte-bar-up{color:#ff4c00;border-color:rgba(255,76,0,0.3);}.zte-bar-down{color:#0059fa;border-color:rgba(0,89,250,0.3);}.zte-bar-up::before{content:'';position:absolute;left:0;top:0;bottom:0;z-index:-1;background:rgba(255,76,0,0.12);width:var(--p-up,0%);transition:width 0.5s;}.zte-bar-down::before{content:'';position:absolute;left:0;top:0;bottom:0;z-index:-1;background:rgba(0,89,250,0.12);width:var(--p-down,0%);transition:width 0.5s;}#config-list.gege-list-container{contain:content!important;background-color:#ffffff!important;border-radius:8px!important;border:1px solid #e0e0e0!important;padding:20px 30px!important;box-shadow:0 2px 10px rgba(0,0,0,0.02)!important;margin-top:10px!important;}.gege-section{margin-bottom:10px;}
-    .gege-section:last-child{margin-bottom:0;}.gege-list-container .config-title{font-size:16px!important;font-weight:bold!important;color:#333!important;margin:15px 0 10px 0!important;padding-bottom:5px!important;}.gege-list-container .gege-section:first-child .config-title{margin-top:0!important;}.gege-empty-state{color:#999!important;font-size:14px!important;padding:0 0 15px 5px!important;border-bottom:1px solid #f0f0f0!important;margin-bottom:5px!important;}.gege-list-item{background-color:transparent!important;border-bottom:1px solid #f0f0f0!important;padding:15px 10px!important;margin-bottom:0!important;border-radius:0!important;}
-    .gege-list-item:last-child{border-bottom:none!important;}#zte-geek-board{contain:layout style;background-color:transparent!important;border-left:4px solid #0059fa!important;border-radius:0!important;padding:5px 0 5px 15px!important;margin:10px 0 15px 0!important;box-shadow:none!important;border-bottom:1px solid #f0f0f0!important;font-size:14px;display:flex;flex-direction:column;gap:6px;padding-bottom:15px!important;}#gege-global-overlay #zte-geek-board.geek-frozen-pane{position:sticky!important;top:0px!important;z-index:100!important;background-color:#f3f4f5!important;margin-top:0!important;padding-top:15px!important;box-shadow:0 10px 15px -3px rgba(0,0,0,0.05)!important;border-radius:0 0 8px 8px!important;}.gege-pin{cursor:pointer;font-size:11px;filter:grayscale(100%);opacity:0.5;transition:transform 0.2s;margin-left:2px;}
-    .gege-pin.active{filter:none;opacity:1;transform:scale(1.1);}#gege-global-overlay{position:fixed;top:7.5%;right:0;bottom:0;background:#f3f4f5;z-index:9999;overflow-y:auto;padding-bottom:50px;left:0!important;border-radius:16px 16px 0 0;box-shadow:0 -5px 25px rgba(0,0,0,0.15);transition:top 0.3s ease;}#zte-geek-board{position:relative!important;overflow:visible!important;}#gege-speed-chart{position:absolute;z-index:25;box-sizing:border-box;cursor:move;user-select:none;touch-action:none;container-type:inline-size;}#gege-speed-chart canvas{display:block;width:100%;height:100%;}.gege-chart-head,.gege-chart-foot{position:absolute;left:clamp(28px,8%,36px);right:8px;display:flex;align-items:center;pointer-events:none;font:bold clamp(9px,2.1cqw,11px) system-ui,sans-serif;white-space:nowrap;overflow:hidden;}.gege-chart-head{top:2px;color:#111;gap:8px;}.gege-chart-head [data-gc="range"]{color:#666;font-weight:normal;overflow:hidden;text-overflow:ellipsis;margin-left:auto;}.gege-chart-foot{bottom:4px;justify-content:flex-start;gap:clamp(3px,1.1cqw,12px);}.gege-chart-foot span{min-width:0;overflow:hidden;text-overflow:ellipsis;}.gc-up{color:#ff4c00;flex:0 1 auto;}.gc-down{color:#0b5;flex:0 1 auto;}.gc-extra{color:#666;text-align:right;margin-left:auto;flex:1 1 0;min-width:0;}#gege-speed-chart .gege-chart-resize{position:absolute;right:-4px;bottom:-4px;width:13px;height:13px;border-right:3px solid #0059fa;border-bottom:3px solid #0059fa;cursor:nwse-resize;border-radius:2px;}@media (max-width:768px){}@media (max-width: 768px){.geek-right-box:has(#gb-wan-zero-up),.geek-right-box:has(#gb-cur-up-vol){display:none!important}.gege-list-item{padding:12px 10px!important}.config-item-box{position:relative!important;flex-direction:column!important;padding-bottom:0!important}.config-item .info,.config-item .logo,.config-item .speed{width:100%!important;border:none!important;padding:0!important;position:static!important}.config-item .dev-intro{min-height:auto!important;justify-content:center!important;padding-right:90px!important}.config-item .logo{padding-bottom:4px!important}.config-item .info{flex-direction:column!important;margin:0 0 6px 0!important;gap:2px!important}.dev-ip{position:absolute!important;top:0!important;right:0!important;font-size:11px!important;background:rgba(0,89,250,0.08);color:#0059fa!important;padding:2px 6px!important;border-radius:4px;font-weight:bold;line-height:1.2;z-index:10;width:auto!important}.dev-number{width:auto!important;margin:0!important;font-size:11px!important}.gege-ratio-box{width:100%!important;margin-top:2px!important;margin-bottom:0!important}.gege-down-box{width:100%!important;margin-top:2px!important}#zte-geek-board{padding:8px!important;gap:0!important;font-size:11.5px!important}.geek-row{height:auto!important;flex-wrap:wrap!important;margin-bottom:4px!important;justify-content:flex-start!important;gap:2px 6px!important;line-height:1.3!important}.geek-label{width:auto!important;min-width:60px!important;font-size:11.5px!important;flex:0 0 auto!important}.geek-val-box{width:auto!important;flex:1 1 0%!important;display:flex!important;flex-wrap:wrap!important;margin-left:0!important;gap:2px 6px!important}.geek-fixed-width{width:auto!important}.geek-right-box{width:100%!important;flex:0 0 100%!important;text-align:left!important;font-size:11.5px!important;margin-top:2px!important;margin-left:0!important}.gege-list-container{padding:8px!important}.zte-enhance-speed{gap:4px!important}}
+  st.innerHTML = `/* @BroTech-Reserved style-panel.part.js */
+    .t-row,.zte-enhance-speed{font-family:Consolas;}
+    @media (max-width:768px){.config-item-box{position:relative!important}.dev-ip{top:0!important;right:0!important}}
     `;document.
   head.
   appendChild(st);
@@ -387,35 +365,18 @@ function fBy(bps) {
           intUp: spD ? (spD.integral_up || 0) : 0, intDn: spD ? (spD.integral_down || 0) : 0,
           uB: CONFIG.readSaveData === 1 ? 0 : (spD ? cC.offUp - (spD.up || 0) : cC.offUp), 
           dB: CONFIG.readSaveData === 1 ? 0 : (spD ? cC.offDn - (spD.down || 0) : cC.offDn),
-          oU: cC.offUp, oD: cC.offDn, name: spD?.name || cC.name || m, hU: new Float64Array(32), hD: new Float64Array(32), hIdx: 0, ifc: cC.iface
+          oU: cC.offUp, oD: cC.offDn, name: spD?.name || cC.name || m, hU: new Float64Array(64), hD: new Float64Array(64), hIdx: 0, ifc: cC.iface
         };
         let cS = S.cls[m],
           dU = cC.offUp - cS.lU,
           dD = cC.offDn - cS.lD;
-        if (dU < 0 || dD < 0) {
-          if (dU < 0) { cS.uB += dU; cS.oU += dU; cS.dpU = cS.lU; }
-          if (dD < 0) { cS.dB += dD; cS.oD += dD; cS.dpD = cS.lD; }
-          cS.aR = 3;}
-
-        else if (cS.aR === 3) {
-          if (dU > 0 || dD > 0) {
-          if (cS.dpU && dU > cS.dpU * 0.975 && cS.dpD && dD > cS.dpD * 0.975) {
-            if (dU < cS.dpU * 1.1 || dU < cS.dpU + CONFIG.宽带最大外网上行速率 * CONFIG.lanRefreshInterval) {
-              cS.uB += cS.dpU; cS.oU += cS.dpU;
-              } else {
-                cS.uB += dU; cS.oU += dU;}
-             if (dD < cS.dpD * 1.1 || dD < cS.dpD + CONFIG.宽带最大外网下行速率 * CONFIG.lanRefreshInterval) {
-              cS.dB += cS.dpD; cS.oD += cS.dpD;
-              } else {cS.dB += dD; cS.oD += dD;
-              }
-            cS.aR = 2; 
-            if (CONFIG.盲漫游 === undefined) CONFIG.盲漫游 = 1;
-            } else {
-              cS.aR = 0; 
-            }
-            cS.dpU = 0; cS.dpD = 0; 
-          }
-        }
+        /* @BroTech-Reserved counter-guard-head.part.js */
+            cS.dpU && dU > cS.dpU * 0.975 && cS.dpD && dD > cS.dpD * 0.975
+        ) {
+              if (dU < cS.dpU * 1.1 || dU < cS.dpU + CONFIG.宽带最大外网上行速率 * CONFIG.lanRefreshInterval) {
+                cS.uB += cS.dpU; cS.oU += cS.dpU;
+              } else { cS.uB += dU; cS.oU += dU; }
+              /* @BroTech-Reserved counter-guard-tail.part.js */
        else if (cS.ifc !== cC.iface) { if (CONFIG.盲漫游 !== 0) cS.aR = 1; if (CONFIG.盲漫游 === 1) cS.aR = 2;}
        else if (cS.aR > 0) { cS.aR--; }
        cS.ifc = cC.iface;
@@ -454,8 +415,9 @@ function fBy(bps) {
   }
 
   function buildCSV() {
-    const 读档说明 = ' （含路由器后台读档）';
-    /* @BroTech-Reserved csv-report.part.js */
+    /* @BroTech-Reserved csv-report-head.part.js */
+      csvRow([`统计周期：${new Date(start + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} 至 ${new Date(now + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} (UTC${CONFIG.时区补偿 > 0 ? '+' : ''}${CONFIG.时区补偿 / 3600000})${CONFIG.readSaveData === 1 ? ' （含路由器后台读档）' : ''}`]),
+/* @BroTech-Reserved csv-report-tail.part.js */
       csvRow(['Bro-Stat@哥哥科技 https://space.bilibili.com/501430041']),
       csvRow(['项目主页: https://github.com/ucxn/Bro-Stat']),
       csvRow(['脚本下载: https://scriptcat.org/users/203510'])
@@ -477,7 +439,7 @@ function doSettle(nowMs) {
       function getSpark(ringArr, headIdx, maxVal) {
         let s = "";
         for (let i = 16; i--; ) {
-          let v = ringArr[(headIdx - i) & 31];
+          let v = ringArr[(headIdx - i) & 63];
           s += SPRK[v > 0 ? Math.min(7, Math.max(1, ((v / maxVal) * 7) | 0)) : 0];
         }
         return s;
@@ -488,46 +450,13 @@ function doSettle(nowMs) {
         if (c) return `<svg viewBox="0 0 100 100" width="45" height="45" xmlns="http://www.w3.org/2000/svg"><g transform="rotate(180 50 50)"><path d="M18 82V36Q18 32 22 32H28V24Q28 20 32 20H38V14Q38 10 42 10H58Q62 10 62 14V20H68Q72 20 72 24V32H78Q82 32 82 36V82Q82 86 78 86H22Q18 86 18 82Z" fill="${c}" fill-opacity=".10" stroke="${c}" stroke-width="4" stroke-linejoin="round"/><g stroke="${c}" stroke-width="3.2" stroke-linecap="round"><path d="M31 54V76"/><path d="M36.5 54V76"/><path d="M42 54V76"/><path d="M47.5 54V76"/><path d="M53 54V76"/><path d="M58.5 54V76"/><path d="M64 54V76"/><path d="M69.5 54V76"/></g></g></svg>`;
         return `<svg viewBox="0 0 100 100" width="45" height="45"><rect x="15" y="15" width="70" height="65" rx="5" fill="#cfd8dc" stroke="#90a4ae" stroke-width="4"/><path d="M 25,25 L 75,25 L 75,60 L 60,60 L 60,75 L 40,75 L 40,60 L 25,60 Z" fill="#263238"/><g fill="#ffca28"><rect x="30" y="25" width="2.5" height="18"/><rect x="35" y="25" width="2.5" height="18"/><rect x="40" y="25" width="2.5" height="18"/><rect x="45" y="25" width="2.5" height="18"/><rect x="52.5" y="25" width="2.5" height="18"/><rect x="57.5" y="25" width="2.5" height="18"/><rect x="62.5" y="25" width="2.5" height="18"/><rect x="67.5" y="25" width="2.5" height="18"/></g><circle cx="21" cy="73" r="3.5" fill="#4caf50"/><circle cx="79" cy="73" r="3.5" fill="#ffb300"/></svg>`;
       };
-      const 信号档位 = [-40, -46, -50, -56, -61, -67, -72, -76, -80, -85];
       const getIconSvg = (r, isW, rate = 0) => {
         if (isW) return getPortSvg(+rate || 0);
         let c = r > -24 ? '#4caf50' : r > -35 ? '#9c27b0' : '#0059fa';
     /* @BroTech-Reserved wifi-signal-icons.part.js */
       };
       function rUI(wU, wD, sU, sD, cI) {
-    let tOD = 0,
-      LUp = 0,
-      LDn = 0,
-      hpU = 0,
-      hpD = 0,
-      abU = 0,
-      abD = 0,
-      curHpU = 0,
-      curHpD = 0,
-      tot_cU = 0;
-    for (let k in S.cls) {
-      let s = S.cls[k], cC = cI[k];
-                  let cU = Math.max(0, (s.lU || 0) - (s.uB || 0));
-      let cD = Math.max(0, (s.lD || 0) - (s.dB || 0));
-      let sessU = Math.max(0, (s.lU || 0) - (s.oU || 0));
-      let sessD = Math.max(0, (s.lD || 0) - (s.oD || 0));
-      tot_cU += cU;
-      LUp += s.intUp || 0;
-      LDn += s.intDn || 0;
-      hpU += (CONFIG.readSaveData === 2 ? cU : sessU); 
-      hpD += (CONFIG.readSaveData === 2 ? cD : sessD);
-      if (cC) {
-        curHpU += (CONFIG.readSaveData === 2 ? cU : sessU); 
-        curHpD += (CONFIG.readSaveData === 2 ? cD : sessD);
-        tOD += cC.offDn || 0;
-      }
-            abU += CONFIG.readSaveData === 2 ? sessU : (cC ? (cC.offUp || 0) : (s.lU || 0));
-      abD += CONFIG.readSaveData === 2 ? sessD : (cC ? (cC.offDn || 0) : (s.lD || 0));
-      s.hIdx = (s.hIdx + 1) & 31;
-      s.hU[s.hIdx] = cC ? cC.upRate : 0;
-      s.hD[s.hIdx] = cC ? cC.dnRate : 0;
-/* @BroTech-Reserved ha-quick-report.part.js */
-    }
+    /* @BroTech-Reserved agg-loop-official.part.js */
     S.cSnap = {
       timestamp: Date.now(),
       global: {
@@ -554,7 +483,17 @@ function doSettle(nowMs) {
       if (S.haTick === 1) {
         try { GM_setValue('ha_snapshot', S.cSnap); } catch(e) {console.warn(e);}}
      let nowMs = Date.now();
-          /* @BroTech-Reserved settle-banner.part.js */
+          if (nowMs >= S.Force_MS && !S._RST) {
+            doSettle(nowMs);
+          } else if (nowMs >= S.Warn_MS && !document.getElementById('gb-w-bnr')) {
+            const bd = document.getElementById('zte-geek-board');
+            if (bd) {
+              const bn = document.createElement('div'); bn.id = 'gb-w-bnr';
+              bn.style.cssText = 'background:#fff3cd;color:#856404;padding:10px 15px;margin-bottom:10px;border-radius:6px;border-left:5px solid #ffc107;font-weight:bold;font-size:13px;display:flex;justify-content:space-between;align-items:center;width:100%;box-sizing:border-box;';
+              bn.innerHTML = `<span> 统计周期即将结束，流量将在跨越边界时自动清零备份。</span><button id="gb-f-btn" style="background:#ffc107;border:none;padding:4px 10px;border-radius:4px;cursor:pointer;font-weight:bold;color:#333;">立即导出并清零</button>`;
+              bd.insertBefore(bn, bd.firstChild);
+              document.getElementById('gb-f-btn').onclick = () => doSettle(Date.now());}
+          }
     }
     S.rTick = ((S.rTick || 0) + 1) & 7;
     if (S.rTick === 1 || !S.cRT) {
@@ -595,32 +534,7 @@ function doSettle(nowMs) {
                                 <div class="geek-row"><span class="geek-label">LAN：<span id="gege-pin-btn" class="gege-pin" title="冻结窗格">📌</span></span><div class="geek-val-box"><span class="c-up geek-fixed-width" id="gb-lan-up-vol"></span><span class="c-down geek-fixed-width" id="gb-lan-down-vol"></span></div><div class="geek-right-box">WAN：<span class="c-up" id="gb-wan-up-vol"></span> | <span class="c-down" id="gb-wan-down-vol"></span></div></div>
                 <div class="geek-row"><span class="geek-label">高精流量统计 -></span><div class="geek-val-box"><span class="c-up geek-fixed-width" id="gb-int-up-vol"></span><span class="c-down geek-fixed-width" id="gb-int-down-vol"></span></div><div class="geek-right-box" style="color: #666;">当前总计：<span style="color:#FF6700;" id="gb-abs-up-vol"></span> | <span style="color:#18A058;" id="gb-abs-down-vol"></span></div></div>`;
         }layoutHtml += `<div class="geek-row" id="gb-phys-row" style="display:none; height:auto!important; flex-wrap:wrap;"><span class="geek-label" style="font-weight:normal; color:#666;">物理网口:</span><div class="geek-val-box" id="gb-phys-data" style="flex-wrap:wrap; font-size:13px; font-weight:normal;"></div></div>`;
-                bd.innerHTML = layoutHtml;
-        let pinBtn = bd.querySelector('#gege-pin-btn');
-        if (pinBtn) {
-            if (S.isPinned) {
-                bd.classList.add('geek-frozen-pane');
-                pinBtn.classList.add('active');
-            }
-            pinBtn.onclick = () => {
-                S.isPinned = !S.isPinned;
-                bd.classList.toggle('geek-frozen-pane', S.isPinned);
-                pinBtn.classList.toggle('active', S.isPinned);
-            };
-        }
-    }
-        let ol = document.getElementById('gege-global-overlay'),
-      iPO = ol && ol.style.display === 'block',
-      aC = iPO ? ol : document;
-    if (iPO) {
-      let ac = document.getElementById('gege-board-anchor');
-      if (ac && bd.nextSibling !== ac) ac.parentNode.insertBefore(bd, ac);
-    }
-    else {
-      let mn = document.querySelector('.el-table') || document.querySelector('.config-item')?.closest('div') || document.querySelector('.main-content');
-      if (mn && bd.parentNode !== mn.parentNode) mn.parentNode.insertBefore(bd, mn);
-    }
-    requestAnimationFrame(() => {
+                /* @BroTech-Reserved board-pin-anchor.part.js */
       if (!S.oDC || S._domRebuilt || S._lastPanelState !== iPO) {
         S.oDC = Object.create(null);
         if (!iPO) {
@@ -679,28 +593,7 @@ function doSettle(nowMs) {
             if (pb) pb.style.display = 'none'; if (pv) pv.style.display = 'none';
         }
         画总速率图(bd);
-                if (bd.querySelector('#gb-ratio-display')) {
-          bd.querySelector('#gb-cur-up-vol').textContent = `🔼 ${fV(curHpU)}`;
-          bd.querySelector('#gb-cur-down-vol').textContent = `🔽 ${fV(curHpD)}`;
-          if (bd.querySelector('#gb-wan-zero-up')) {
-              bd.querySelector('#gb-wan-zero-up').textContent = !S.wZEU ? '' : fSV(S.wZEU);
-              bd.querySelector('#gb-wan-zero-down').textContent = !S.wZED ? '' : fSV(S.wZED);
-              bd.querySelector('#gb-wan-zero-up-cnt').textContent = S.wZEUC || 0;
-              bd.querySelector('#gb-wan-zero-down-cnt').textContent = S.wZEDC || 0;
-          }
-        }
-      }
-      const inv_tot_cU = tot_cU > 0 ? 100 / tot_cU : 0;
-      const inv_tOD = tOD > 0 ? 100 / tOD : 0;
-      const inv_sU = sU > 0 ? 100 / sU : 0;
-      const inv_sD = sD > 0 ? 100 / sD : 0;
-      for (let m in cI) {
-        let it = oDC[m];
-        if (!it) continue;
-        const cC = cI[m] || { upRate: 0, dnRate: 0, iface: "", offUp: 0, offDn: 0 },
-              cS = S.cls[m] || { intUp: 0, intDn: 0, onS: 0 };
-        
-        let cache = it._gege || (it._gege = {});
+                /* @BroTech-Reserved device-loop-official.part.js */
         
         let rRs = cC.rssi ? cC.rssi - 93 : 0, lRs = cS.lRs ?? rRs;
         if (cC.rssi) { // 漏桶防抖核心（仅针对 -23, -34, -40, -55 敏感边界）
@@ -721,7 +614,7 @@ function doSettle(nowMs) {
         /* @BroTech-Reserved device-card-official.part.js */
           let clU = (S.aWu * 0.1) || 0; if (clU < 512000) clU = 512000;
           let clD = (S.aWd * 0.125) || 0;
-          for (let i = 32; i--; ) { if (cS.hU[i] > clU) clU = cS.hU[i]; if (cS.hD[i] > clD) clD = cS.hD[i]; }
+          for (let i = 64; i--; ) { if (cS.hU[i] > clU) clU = cS.hU[i]; if (cS.hD[i] > clD) clD = cS.hD[i]; }
           (cache.bUSpk ??= bU.querySelector('.v-spark')).textContent = getSpark(cS.hU, cS.hIdx, clU);
           (cache.bDSpk ??= bD.querySelector('.v-spark')).textContent = getSpark(cS.hD, cS.hIdx, clD);
         }
