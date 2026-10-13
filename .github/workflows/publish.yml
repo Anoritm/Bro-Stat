@@ -19,7 +19,7 @@ jobs:
       - name: Commit changed products
         shell: bash
         run: |
-          git add ASUS-1.user.js H3C-TX_1801.user.js Huawei-1.user.js Mi-WiFi_RD.user.js TP-L1.user.js Tenda-1.user.js
+          git add -- *.user.js
           if git diff --cached --quiet; then
             echo "No dev files changed."
             exit 0

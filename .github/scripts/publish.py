@@ -5,14 +5,7 @@ import re
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "Source"
 RESERVED = ROOT / "Reserved"
-FILES = [
-    "ASUS-1.user.js",
-    "H3C-TX_1801.user.js",
-    "Huawei-1.user.js",
-    "Mi-WiFi_RD.user.js",
-    "TP-L1.user.js",
-    "Tenda-1.user.js",
-]
+FILES = sorted(p.name for p in SOURCE.glob("*.user.js"))
 PATTERN = re.compile(r"/\*\s*@BroTech-Reserved\s+([A-Za-z0-9_.-]+)\s*\*/")
 
 def split_header(data: bytes):
