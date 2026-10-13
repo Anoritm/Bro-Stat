@@ -13,7 +13,7 @@
 [**Release Build (Stable)**](https://github.com/ucxn/Bro-Stat/releases)&nbsp;&emsp;**[Trouble?](./.github/Install.md#trouble)**
 
 
-The current universal edition primarily supports and enhances routers from **TP-Link, Xiaomi (MiWiFi), ASUS/ROG，HUAWEI, H3C(ISP), Tenda, ZTE**, and other mainstream vendors.
+The current universal edition primarily supports and enhances routers from **TP-Link, Xiaomi (MiWiFi), ASUS/ROG，HUAWEI, H3C(ISP), Tenda, ZTE, RuiJie**, and other mainstream vendors.
 
 Built using professional measurement and control principles and crafted with the meticulous attention to detail characteristic of BroTech.It supports a wide range of commercially available home router brands, and its architecture is theoretically compatible with nearly all specifications: all consumer-grade gateways that provide data via a web interface.
 

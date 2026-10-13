@@ -2,7 +2,7 @@
 // @name            锐捷睿易路由器增强 Reyee 网页 增强 脚本 插件 网速 流量 连接数 延迟 数学统计 分析
 // @name:en         Bro-Stat_Ruijie-Reyee-Stat_Max
 // @namespace       ucxn
-// @version         5.9.9.P
+// @version         5.9.9.R
 // @description     适用于锐捷（睿易 Reyee）路由器的逐设备网速流量统计、连接数、外网延迟曲线、流量一键导出的路由器Web网页后台增强利器
 // @copyright       哥哥科技. All Rights Reserved. 使用必要条件之一：不得删除源码、用户界面、文本中的任何“哥哥”；传播官方链接不限；除安装自用外任何使用传输均需查看许可证。
 // @description:en  A web admin enhancement for Ruijie / Reyee routers: per-device speed and traffic statistics, connection counts, WAN latency charting and one-click traffic export.
@@ -34,7 +34,7 @@
 
   // ======== [0] 用户极客环境变量配置区 ========
   const CONFIG = {
-    readSaveData: 1, // 【历史记录】 1: 从路由器后台读档 | 0: 新局模式 | 2: 从本地长期历史读档
+    readSaveData: 1, // 【历史记录】 1: 从路由器后台读档 | 0: 新局模式 | 2: 从本地长期历史读档 | 3: 启动时用后台临时值充当积分
     uiLayout: 1, // 【面板拓扑结构】 0: 经典版 | 1: 详细紧凑版(驾驶舱美学) | 2: 详细平铺版(报表流美学)
     calcMode: 1, // 1: 上行/下行倍数模式, 0: 上行占总和比例模式
     ratioExtremeUp: 10, // 极端上传判定阈值 (> 1000%)
@@ -48,14 +48,14 @@
     盲漫游: undefined, //也就是无线交换机（AP/有线桥接）模式，无线设备被主路由识别为有线设备则设置1
     周期类型: 'M', // 'M'(每月), 'W'(每周), 'D'(固定天数), 其它任意字符：不开启周期重置+自动导出功能
     周_天设置: 1, // M: 1~31号; W: 0~6(周日~周六); D: 间隔天数(如 7)
-    基准日期: '2026-10-08', // 原点时间(仅 D 模式有效) 任意一个历史周期的零点
+    基准日期: '2026-11-16', // 原点时间(仅 D 模式有效) 任意一个历史周期的零点
     报告时间: -540, // 提示时间：相对周期0点的偏移分钟数。(如 -4320 代表提前 3 天) 设置相对指定日期的下个周期起点的时间偏移量
     自动导出: 0, // 强制导出：相对周期0点的偏移分钟数。(如 W模式+锚点6(周六)+偏移-180 = 周五 21:00 强制导出清零)
     时区补偿: 28800000, // 默认 UTC+8 时区补偿量。
     portMap: {
       "有线": "有线",
       "2.4G": "2.4G",
-      "5G": "5.2G", // 面板文案：主信道 ≥149 时自动换成 5.8G（见信道读取处）；代码语义上仍是“高速主频段”
+      "5G": "5.2G",
       "6G": "6G",
       "MLO": "MLO"
     }
@@ -70,16 +70,27 @@
     hasW2: !1, fI: 0,
     _domRebuilt: !1, _lastPanelState: null, oDC: null, Warn_MS: 0, Force_MS: 0, _RST: !1,
     aWu: 0, aWd: 0, lwTU: 0, lwTD: 0, cSnap: null,
+    lTotUp: 0, lTotDn: 0, lInstU: 0, lInstD: 0, lLT: undefined,
     总上行图: new Float64Array(8192), 总下行图: new Float64Array(8192), 总图点数: 0,
     wMaxU: 0, wMaxD: 0, wMinU: Infinity, wMinD: Infinity, 图表拖: null, 图表待画: 0
   };
   // 锐捷专属状态：auth 与 ping 均由页面自身请求被动截获；计数器按字节自行累计
   const 锐 = {
-    auth: null, ov: null, 错误: '', 计数: Object.create(null), 连接比: 0, 信道5: (typeof GM_getValue !== 'undefined' && +GM_getValue('rj_ch5', 60)) || 60,
+    auth: null, ov: null, 错误: '', 计数: Object.create(null), 连接比: 0, 射频: null, 射频取中: !1, 信道文: '', 信道24: 0, 信道5: 0, 衰减: 0,
     延迟: null, 丢包: 0, 延迟时刻: 0, 延迟图: new Float64Array(1024), 延迟点数: 0
   };
 
-  if (锐.信道5 > 148) CONFIG.portMap['5G'] = '5.8G'; // 上次记住的主信道（5G 暂无客户端时也能写对标题）
+  // 信道变化时一次性算好：5G 面板文案（≥149 为 5.8G，否则 5.2G）与 2.4G 的 RSSI 频率修正（dB）
+  function 锐应用信道(c24, c5) {
+    if (c24 === 锐.信道24 && c5 === 锐.信道5) return;
+    锐.信道24 = c24; 锐.信道5 = c5;
+    锐.衰减 = 20 * Math.log10((5000 + 5 * c5) / (2407 + 5 * c24));
+    CONFIG.portMap['5G'] = c5 > 148 ? '5.8G' : '5.2G';
+    window.gegeForceUIRedraw = !0;
+  }
+  锐应用信道(6, 60); // 读到真实信道之前的占位
+  // 状态行「射频」里 5G 频段的显示文案：按信道查表（仅此处使用；面板分组标题仍走 portMap 的 5.2G/5.8G 二分）
+  const 锐频段 = {32:'5.1G',36:'5.2G',40:'5.2G',44:'5.2G',48:'5.2G',52:'5.2G',56:'5.3G',60:'5.3G',64:'5.3G',100:'5.5G',104:'5.5G',108:'5.5G',112:'5.5G',116:'5.5G',120:'5.6G',124:'5.6G',128:'5.6G',132:'5.6G',136:'5.6G',140:'5.7G',144:'5.7G',149:'5.8G',153:'5.8G',157:'5.8G',161:'5.8G',165:'5.8G',184:'4.9G',188:'4.9G',192:'4.9G',196:'4.9G'};
 
   // ======== [1] 被动截获：auth（任意 /api/ 请求）与外网延迟（概览页每秒一次的 ping） ========
   function 收延迟(txt) {
@@ -99,7 +110,7 @@
     XP.open = function (m, u) {
       try {
         const s = String(u), k = /[?&]auth=([0-9a-f]+)/.exec(s);
-        if (k) 锐.auth = k[1];
+        if (k) { const 首次 = !锐.auth; 锐.auth = k[1]; if (首次) setTimeout(锐取射频); } // 网页打开后读取一次射频信道
         this.__gegeU = s;
       } catch (e) { console.warn(e); }
       return oOpen.apply(this, arguments);
@@ -117,7 +128,10 @@
     ov: ['{"method":"devSta.get","params":{"module":"overview","noParse":false,"async":null,"remoteIp":false,"device":"pc"}}',
       '0a02ec86281388dc9c23987f67609885', 'e29be7fc26168f4c0addfa6146da910d'],
     ul: ['{"method":"cmdArr","params":{"device":"pc","params":[{"method":"devSta.get","params":{"module":"user_list","noParse":true,"async":null,"remoteIp":false,"data":{"devType":"all","dataType":"timely"}}},{"method":"acConfig.get","params":{"module":"wirelessMacFilter","noParse":false,"async":null,"remoteIp":false}}]}}',
-      'b3011dc5550b351d6ef7935602aa6b40', '23241979c5f2f63c22b3d59ec531e44e']
+      'b3011dc5550b351d6ef7935602aa6b40', '23241979c5f2f63c22b3d59ec531e44e'],
+    // 官方页面「设备列表」同款请求：user_list+flow+port_status+ap_list，仅取第 4 项 ap_list（射频信道/占用/底噪），用不到的几项不解析
+    ap: ['{"method":"cmdArr","params":{"device":"pc","params":[{"method":"devSta.get","params":{"module":"user_list","noParse":true,"async":null,"remoteIp":false,"data":{"devType":"all","dataType":"timely"}}},{"method":"devSta.get","params":{"module":"flow","noParse":true,"async":null,"remoteIp":false,"data":{"func":"interface_info"}}},{"method":"devSta.get","params":{"module":"port_status","noParse":true,"async":null,"remoteIp":false}},{"method":"devSta.get","params":{"module":"ap_list","noParse":true,"async":null,"remoteIp":false}}]}}',
+      '0cfc3dc6fb02046b214b396eb0b20b71', 'a6daf4986b6f0869804ee5587d7e6d2b']
   };
   async function 锐取(k) {
     const [body, ca, csa] = 锐请求[k];
@@ -129,6 +143,22 @@
     const j = await r.json();
     if (j.code !== 0) throw new Error('code ' + j.code);
     return j.data;
+  }
+  // 射频信道：只在「网页打开后」与「每次点开面板」各读一次，不进 1 秒循环。channel 形如 "auto-6,auto-60"，与 band/chutil/channf 按逗号逐项对应
+  async function 锐取射频() {
+    if (!锐.auth || 锐.射频取中) return;
+    锐.射频取中 = !0;
+    try {
+      const a = (await 锐取('ap'))[3]?.list?.[0];
+      if (!a) return;
+      const 拆 = s => String(s || '').split(','), 取信道 = s => +s.slice(s.lastIndexOf('-') + 1), // "auto-60"→60；"36"→36
+        ch = 拆(a.channel), u = 拆(a.chutil), r = {};
+      拆(a.band).forEach((k, i) => { r[k] = { ch: 取信道(ch[i]), util: +u[i] }; });
+      锐应用信道(r['2.4G']?.ch || 锐.信道24, r['5G']?.ch || 锐.信道5);
+      锐.射频 = r;
+      锐.信道文 = Object.entries(r).map(([k, v]) => `${(k === '5G' && 锐频段[v.ch]) || CONFIG.portMap[k] || k} 信道${v.ch} 占用${v.util}%`).join('｜');
+    } catch (e) { console.warn('[Ruijie] 读取射频信道失败，沿用客户端信道', e); }
+    finally { 锐.射频取中 = !1; }
   }
   // 锐捷设备计数器（字节，字符串）：绝对值偶发整 ±2^32 跳变（低 32 位被当作有符号数扩展），只信相邻差值。
   // 差值先模 2^32 再折算到 ±2^31；负值或超出物理上限视为掉线重连/归零，交给计数回退逻辑处理。
@@ -165,15 +195,16 @@
   let isF = !1;
   const 版本号 = (typeof GM_info !== 'undefined' && GM_info.script?.version) || '环境不支持获取版本号';
   // 锐捷版：最小单位固定为 kbps / kB/s（不降到 bps），小数位数不设上限、取到除尽为止。
-  // 1 bit/s = 0.001 kbps = 0.000125 kB/s，分别至多 3 / 6 位小数；先 toFixed 定位再去尾零，二进制浮点误差（≈1e-13）远小于末位，不会出现“除不尽”。
+  // 整数 bit/s 除以 1000 或 8000 必是有限小数（≤3 / ≤6 位）：单次除法是 IEEE 正确舍入，Number 转字符串又是“最短往返表示”，有限小数会原样打印、尾零自然消失。
+  // 注意必须用除法：0.000125 在二进制里存不准，乘出来差 1ulp，会打印成 0.0011250000000000001（穷举 0~8388607 有 14% 中招）。
   function fB(bps) {
     if (bps > 1e9) return `${(bps * 1e-6).toFixed(1)} Mbit/s`;
     if (bps > 1e6) return `${(bps * 1e-6).toFixed(2)} Mbps`;
-    return `${(bps * 1e-3).toFixed(3).replace(/\.?0+$/, '')} kbps`;
+    return `${Math.round(bps) / 1000} kbps`; // 先取整：均值等非整数 bit/s 否则会打印出一长串
   }
   function fBy(bps) {
     if (bps === 0.1) return '智能拦截中...'; if (bps === 0.2) return '漫游中...'; if (bps === 0.3) return '异常网速！'; // 必须大于0的数字，否则数据异常会影响积分计算和数值类型
-    return bps > 8388607 ? `${(bps * 1.1920928955078125e-7).toFixed(2)} MiB/s` : `${(bps * 0.000125).toFixed(6).replace(/\.?0+$/, '')} kB/s`;
+    return bps > 8388607 ? `${(bps * 1.1920928955078125e-7).toFixed(2)} MiB/s` : `${Math.round(bps) / 8000} kB/s`;
   }
 
   function fV(bits) {
@@ -193,7 +224,7 @@
 
   function fSV(bits) {
     if (bits >= 84607500288) return `${(bits / 8589934592).toPrecision(4)}G`;
-    if (bits > 8388608000) return `${Math.round(bits / 8388608)}M`;
+	  if (bits > 8388608000) return `${Math.round(bits / 8388608)}M`;
     if (bits > 8388608) return `${(bits / 8388608).toPrecision(4)}M`;
     if (bits >= 8192) return `${(bits / 8192).toFixed(1)}K`;
     return `${Math.round(bits / 8)}B`;}
@@ -252,9 +283,10 @@
       let cSU = 0, cSD = 0, cTot = 0;
       const hostList = Array.isArray(ulD) ? ulD[0]?.list : null, lanValid = Array.isArray(hostList);
       if (lanValid) {
-        for (const d of hostList) if (d.band === '5G' && +d.channel) {
-          if (锐.信道5 !== +d.channel) { 锐.信道5 = +d.channel; CONFIG.portMap['5G'] = 锐.信道5 > 148 ? '5.8G' : '5.2G'; window.gegeForceUIRedraw = !0; if (typeof GM_setValue !== 'undefined') GM_setValue('rj_ch5', 锐.信道5); }
-          break;
+        if (!锐.射频) { // ap_list 尚未读到时，用客户端自带的信道顶替
+          let c24 = 锐.信道24, c5 = 锐.信道5;
+          for (const d of hostList) if (+d.channel) { if (d.band === '5G') c5 = +d.channel; else if (d.band === '2.4G') c24 = +d.channel; }
+          锐应用信道(c24, c5);
         }
         hostList.forEach(d => {
           let m = nM(d.mac);
@@ -267,7 +299,7 @@
             upRate: u, dnRate: dn, iface: 有线 ? '有线' : (d.mlo ? 'MLO' : (d.band || '无线')),
             offUp: 锐计数(m + 'u', d.up, lanNow), offDn: 锐计数(m + 'd', d.down, lanNow),
             onSec: 锐在线秒(d.onlinetime), name: d.name || hn || ("未知设备·" + m.slice(-5)), ip: d.userIp || "",
-            rssi: 有线 ? 0 : (+d.rssi || 0), rate: parseInt(d.rxrate) || 0, ch: +d.channel || 0,
+            rssi: 有线 ? 0 : (+d.rssi || 0), rate: parseInt(d.rxrate) || 0,
             conn: +d.flow_cnt || 0, ssid: d.ssid || ""
           };
           cSU += u; cSD += dn; cTot += cI[m].conn;
@@ -318,15 +350,15 @@
         else if (cWD > 0) { const wED = cWD * 0.5 * CONFIG.wanRefreshInterval; S.wTotDn += wED; S.wZED = (S.wZED || 0) + wED; S.wZEDC = (S.wZEDC || 0) + 1; }
         S.wLT = wanNow;
       }
-      if (CONFIG.readSaveData === 2 && !S.snapLoaded) { try { let sp = typeof GM_getValue !== 'undefined' ? GM_getValue('ha_snapshot') : null; S.snap = sp && sp.timestamp > (typeof GM_getValue !== 'undefined' ? (GM_getValue('gege_reset_ms', 0) || 0) : 0) ? sp : {}; if(S.snap.global) { S.wTotUp = S.wTotUp === 0 ? S.snap.global.wan_up || 0 : S.wTotUp; S.wTotDn = S.wTotDn === 0 ? S.snap.global.wan_down || 0 : S.wTotDn; } } catch(e){console.warn(e);} S.snapLoaded = !0; }
+      if (CONFIG.readSaveData === 2 && !S.snapLoaded) { try { let sp = typeof GM_getValue !== 'undefined' ? GM_getValue('ha_snapshot') : null; S.snap = sp && sp.timestamp > (typeof GM_getValue !== 'undefined' ? (GM_getValue('gege_reset_ms', 0) || 0) : 0) ? sp : {}; if(S.snap.global) { S.wTotUp = S.wTotUp === 0 ? S.snap.global.wan_up || 0 : S.wTotUp; S.wTotDn = S.wTotDn === 0 ? S.snap.global.wan_down || 0 : S.wTotDn; S.lTotUp = S.lTotUp === 0 ? S.snap.global.lan_integral_up || 0 : S.lTotUp; S.lTotDn = S.lTotDn === 0 ? S.snap.global.lan_integral_down || 0 : S.lTotDn; } } catch(e){console.warn(e);} S.snapLoaded = !0; }
       for (const m in cI) {
         const cC = cI[m];
         const spD = (CONFIG.readSaveData === 2 && S.snap && S.snap.devices && S.snap.devices[m]) || null;
         S.cls[m] ??= {
           upR: cC.upRate, dnR: cC.dnRate, lUT: lanNow,
-          intUp: spD ? (spD.integral_up || 0) : 0, intDn: spD ? (spD.integral_down || 0) : 0,
-          uB: CONFIG.readSaveData === 1 ? 0 : (spD ? cC.offUp - (spD.up || 0) : cC.offUp),
-          dB: CONFIG.readSaveData === 1 ? 0 : (spD ? cC.offDn - (spD.down || 0) : cC.offDn),
+          intUp: CONFIG.readSaveData === 3 ? cC.offUp : (spD ? (spD.integral_up || 0) : 0), intDn: CONFIG.readSaveData === 3 ? cC.offDn : (spD ? (spD.integral_down || 0) : 0),
+          uB: CONFIG.readSaveData & 1 ? 0 : (spD ? cC.offUp - (spD.up || 0) : cC.offUp),
+          dB: CONFIG.readSaveData & 1 ? 0 : (spD ? cC.offDn - (spD.down || 0) : cC.offDn),
           oU: cC.offUp, oD: cC.offDn, name: spD?.name || cC.name || m, hU: new Float64Array(64), hD: new Float64Array(64), hIdx: 0, ifc: cC.iface
         };
         let cS = S.cls[m],
@@ -387,6 +419,16 @@
         cS.lD = cC.offDn;
       }
       if (wanValid) { S.wInstUp = cWU; S.wInstDn = cWD; }
+      if (lanValid) {
+        if (S.lLT === undefined) S.lLT = lanNow;
+        else if (cSU !== S.lInstU || cSD !== S.lInstD) {
+          const lDt = lanNow - S.lLT;
+          if (S.lInstU > 0) S.lTotUp += (S.lInstU + cSU) * lDt * 0.0005; else if (cSU > 0) S.lTotUp += cSU * 0.5 * CONFIG.lanRefreshInterval;
+          if (S.lInstD > 0) S.lTotDn += (S.lInstD + cSD) * lDt * 0.0005; else if (cSD > 0) S.lTotDn += cSD * 0.5 * CONFIG.lanRefreshInterval;
+          S.lLT = lanNow;
+        }
+        S.lInstU = cSU; S.lInstD = cSD;
+      }
       rUI(cWU, cWD, cSU, cSD, cI);
     }
     catch (e) {
@@ -408,7 +450,7 @@
     const csvRowT = a => a.map(v => csvQ(String(v ?? ''))).join(','); // 仅限脚本自带可信常量
     return ((sp, now, start) => '\uFEFF' + [
       csvRow([`哥哥科技 硬路由 NPU 增强系列：专用组件 ${版本号} 生成`]),
-      csvRow([`统计周期：${new Date(start + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} 至 ${new Date(now + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} (UTC${CONFIG.时区补偿 > 0 ? '+' : ''}${CONFIG.时区补偿 / 3600000})${CONFIG.readSaveData === 1 ? ' （含路由器后台读档）' : ''}`]),
+      csvRow([`统计周期：${new Date(start + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} 至 ${new Date(now + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} (UTC${CONFIG.时区补偿 > 0 ? '+' : ''}${CONFIG.时区补偿 / 3600000})${CONFIG.readSaveData === 1 ? ' （含路由器后台读档）' : CONFIG.readSaveData === 3 ? ' （积分以路由器后台计数为起点）' : ''}`]),
       csvRowT(['--- [全局统计] ---']),
       csvRow(['WAN总上传(bit)','WAN总下载(b)','高精全局上行(b)','高精全局下行(b)','LAN积分总上行(b)','LAN积分总下行(b)','本次在线总上行(b)','本次在线总下行(b)']),
       csvRow([Math.round(sp.global?.wan_up||0),Math.round(sp.global?.wan_down||0),Math.round(sp.global?.lan_high_up||0),Math.round(sp.global?.lan_high_down||0),Math.round(sp.global?.lan_integral_up||0),Math.round(sp.global?.lan_integral_down||0),Math.round(sp.global?.lan_off_up||0),Math.round(sp.global?.lan_off_down||0)]),
@@ -438,7 +480,7 @@ function doSettle(nowMs) {
     window.gegeForceUIRedraw = !0; // 重绘 UI
     setTimeout(() => { S._RST = !1; }, 2000); // 解开安全锁
     GM_setValue('ha_snapshot', { timestamp: nowMs, global: {}, devices: {} }); S.snap = {}; S.cSnap = null;
-        S.wTotUp = S.wTotDn = S.w2TotUp = S.w2TotDn = 0; // 内存原地清零
+        S.wTotUp = S.wTotDn = S.w2TotUp = S.w2TotDn = S.lTotUp = S.lTotDn = 0; S.lLT = performance.now(); // 内存原地清零
     for (let k in S.cls) { let s = S.cls[k]; s.intUp = s.intDn = 0; s.uB = s.oU = s.lU; s.dB = s.oD = s.lD; s.hU.fill(0); s.hD.fill(0); } // 内存原地清零底表
   }
 
@@ -562,6 +604,7 @@ function doSettle(nowMs) {
         q('#gb-rj-loss').textContent = 锐.延迟 === null ? '' : `丢包 ${锐.丢包}%`;
         q('#gb-rj-conn').textContent = ov ? `${ov.conntrack_count} / ${ov.conntrack_max}` : '--';
         q('#gb-rj-on').textContent = ov ? ov.online_users : '--';
+        q('#gb-rj-ch').textContent = 锐.信道文 || '--';
         q('#gb-rj-cpu').textContent = ov ? ov.cpuutil : '--';
         q('#gb-rj-run').textContent = ov ? fOT(+ov.runtime || 0) : '--';
         画延迟图(q('#gb-rj-pcv'));
@@ -584,8 +627,8 @@ function doSettle(nowMs) {
       };
       function rUI(wU, wD, sU, sD, cI) {
     let tOD = 0,
-      LUp = 0,
-      LDn = 0,
+      LUp = S.lTotUp,
+      LDn = S.lTotDn,
       hpU = 0,
       hpD = 0,
       abU = 0,
@@ -600,8 +643,6 @@ function doSettle(nowMs) {
       let sessU = Math.max(0, (s.lU || 0) - (s.oU || 0));
       let sessD = Math.max(0, (s.lD || 0) - (s.oD || 0));
       tot_cU += cU;
-      LUp += s.intUp || 0;
-      LDn += s.intDn || 0;
       hpU += (CONFIG.readSaveData === 2 ? cU : sessU);
       hpD += (CONFIG.readSaveData === 2 ? cD : sessD);
       if (cC) {
@@ -720,7 +761,7 @@ function doSettle(nowMs) {
                 <div class="geek-row"><span class="geek-label">局域网代数和</span><div class="geek-val-box"><span class="c-up geek-fixed-width" id="gb-lan-up-bytes"></span><span class="c-down geek-fixed-width" id="gb-lan-down-bytes"></span></div><div class="geek-right-box">实时占比：<span class="c-up" id="gb-perc-up"></span> | <span class="c-down" id="gb-perc-down"></span></div></div>
                                 <div class="geek-row"><span class="geek-label">LAN：<span id="gege-pin-btn" class="gege-pin" title="冻结窗格">📌</span></span><div class="geek-val-box"><span class="c-up geek-fixed-width" id="gb-lan-up-vol"></span><span class="c-down geek-fixed-width" id="gb-lan-down-vol"></span></div><div class="geek-right-box">WAN：<span class="c-up" id="gb-wan-up-vol"></span> | <span class="c-down" id="gb-wan-down-vol"></span></div></div>
                 <div class="geek-row"><span class="geek-label">高精流量统计 -></span><div class="geek-val-box"><span class="c-up geek-fixed-width" id="gb-int-up-vol"></span><span class="c-down geek-fixed-width" id="gb-int-down-vol"></span></div><div class="geek-right-box" style="color: #666;">当前总计：<span style="color:#FF6700;" id="gb-abs-up-vol"></span> | <span style="color:#18A058;" id="gb-abs-down-vol"></span></div></div>`;
-        }layoutHtml += `<div class="geek-row" id="gb-rj-row" style="height:auto!important;"><span class="geek-label">路由器状态</span><div class="geek-val-box"><span id="gb-rj-st" style="font-weight:bold;"></span><span>外网延迟：<b id="gb-rj-ping"></b> <span id="gb-rj-loss" style="color:#666;"></span></span><canvas id="gb-rj-pcv" style="width:180px;height:28px;display:none;"></canvas><span>连接数：<b id="gb-rj-conn"></b></span><span>在线设备：<b id="gb-rj-on"></b></span></div><div class="geek-right-box" style="font-weight:normal;color:#666;">CPU <span id="gb-rj-cpu"></span>｜运行 <span id="gb-rj-run"></span></div></div>`;
+        }layoutHtml += `<div class="geek-row" id="gb-rj-row" style="height:auto!important;"><span class="geek-label">路由器状态</span><div class="geek-val-box"><span id="gb-rj-st" style="font-weight:bold;"></span><span>外网延迟：<b id="gb-rj-ping"></b> <span id="gb-rj-loss" style="color:#666;"></span></span><canvas id="gb-rj-pcv" style="width:180px;height:28px;display:none;"></canvas><span>连接数：<b id="gb-rj-conn"></b></span><span>在线设备：<b id="gb-rj-on"></b></span><span>射频：<b id="gb-rj-ch" style="font-weight:normal;"></b></span></div><div class="geek-right-box" style="font-weight:normal;color:#666;">CPU <span id="gb-rj-cpu"></span>｜运行 <span id="gb-rj-run"></span></div></div>`;
                 bd.innerHTML = layoutHtml;
         const pinBtn = bd.querySelector('#gege-pin-btn');
         if (pinBtn) {
@@ -820,7 +861,7 @@ function doSettle(nowMs) {
 
         const dI = cache.devIntro ??= it.querySelector('.dev-intro');
         let rN = dI && (cache.rssiNode ??= dI.querySelector('.gege-rssi'));
-        if (rN) { let p = cC.rssi ? Math.round((cC.rssi + 93 - (cC.iface === '2.4G' ? 20 * Math.log10((5000 + 5 * 锐.信道5) / (2407 + 5 * (cC.ch || 6))) : 0)) * 2 - 37) : 0; rN.innerHTML = cC.rssi ? `<span style="color:${p < 0?'#ff4c00':'inherit'}">${p}%</span>, ${cC.rssi}` : escapeHTML(cC.ssid); }
+        if (rN) { let p = cC.rssi ? Math.round((cC.rssi + 93 - (cC.iface === '2.4G' ? 锐.衰减 : 0)) * 2 - 37) : 0; rN.innerHTML = cC.rssi ? `<span style="color:${p < 0?'#ff4c00':'inherit'}">${p}%</span>, ${cC.rssi}` : escapeHTML(cC.ssid); }
         if (dI) {
           let bx = cache.upBox ??= dI.querySelector('.gege-up-box');
           if (!bx) {
@@ -985,6 +1026,7 @@ if (!window.gegeBActivated) {
       clearInterval(window.gegeMasterTimer);
       window.gegeMasterTimer = setInterval(eBET, CONFIG.wanRefreshInterval * 1000);
     }
+    锐取射频(); // 每次点开面板读取一次射频信道
     bVD(o).then(() => eBET());
   };
 

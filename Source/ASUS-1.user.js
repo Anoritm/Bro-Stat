@@ -161,7 +161,7 @@ the project’s primary license are fully and continuously complied with.
 
   // ======== [0] 用户极客环境变量配置区 ========
   const CONFIG = {
-    readSaveData: 2, // 【历史记录】 1: 从路由器后台读档 | 0: 新局模式 | 2: 从本地长期历史读档
+    readSaveData: 3, // 【历史记录】 1: 从路由器后台读档 | 0: 新局模式 | 2: 从本地长期历史读档 | 3: 启动时用后台临时值充当积分
     uiLayout: 1, // 【面板拓扑结构】 0: 经典版 | 1: 详细紧凑版(驾驶舱美学) | 2: 详细平铺版(报表流美学)
     injectMode: 3, // 【UI注入模式】 0: 原生侧边栏(1min)| 1: 仅悬浮舱 | 2: 智能选一 | 3：默认模式
     calcMode: 1, // 1: 上行/下行倍数模式, 0: 上行占总和比例模式
@@ -206,6 +206,7 @@ the project’s primary license are fully and continuously complied with.
     w2U: 0, w2D: 0, w2TotUp: 0, w2TotDn: 0, w2LT: undefined,
     hasW2: !1, is5G_149: !1, oWU:0, Warn_MS: 0, Force_MS: 0, _RST: !1,
     aWu: 0, aWd: 0, lwTU: 0, lwTD: 0, cSnap: null,
+    lTotUp: 0, lTotDn: 0, lInstU: 0, lInstD: 0, lLT: undefined,
     DOM缓存: null, DOM容器: null, 有线统一PHY: 0, 主节点MAC: '', 端口请求中: !1,
     总上行图: new Float64Array(8192), 总下行图: new Float64Array(8192), 总图点数: 0,
     wMaxU: 0, wMaxD: 0, wMinU: Infinity, wMinD: Infinity, 图表拖: null, 图表待画: 0
@@ -297,7 +298,7 @@ async function rSD() {
         try {
           let sp = typeof GM_getValue !== 'undefined' ? GM_getValue('ha_snapshot') : null;
           if (sp && sp.timestamp > (typeof GM_getValue !== 'undefined' ? (GM_getValue('gege_reset_ms', 0) || 0) : 0)) {
-            S.wLedgerUp = sp.global?.wan_up || 0; S.wLedgerDn = sp.global?.wan_down || 0;
+            S.wLedgerUp = sp.global?.wan_up || 0; S.wLedgerDn = sp.global?.wan_down || 0; S.lTotUp = sp.global?.lan_integral_up || 0; S.lTotDn = sp.global?.lan_integral_down || 0;
             for (const [m, d] of Object.entries(sp.devices || {})) S.cls[m] = {
               upR: 0, dnR: 0, lUT: n, lU: undefined, lD: undefined,
               intUp: d.integral_up || 0, intDn: d.integral_down || 0,
@@ -363,9 +364,9 @@ let cSU = 0, cSD = 0, cI = Object.create(null);
         const cC = cI[m];
         S.cls[m] ??= {
           upR: cC.upRate, dnR: cC.dnRate, lUT: n, 
-          intUp: 0, intDn: 0,
-          uB: CONFIG.readSaveData === 1 ? 0 : cC.offUp, 
-          dB: CONFIG.readSaveData === 1 ? 0 : cC.offDn,
+          intUp: CONFIG.readSaveData === 3 ? cC.offUp : 0, intDn: CONFIG.readSaveData === 3 ? cC.offDn : 0,
+          uB: CONFIG.readSaveData & 1 ? 0 : cC.offUp, 
+          dB: CONFIG.readSaveData & 1 ? 0 : cC.offDn,
           lU: cC.offUp, lD: cC.offDn, aR: !1, dpU: 0, dpD: 0,
           oU: cC.offUp, oD: cC.offDn, name: cC.name || m, ip: cC.ip || '', hU: new Float64Array(64), hD: new Float64Array(64), hIdx: 0
         };
@@ -397,6 +398,10 @@ let cSU = 0, cSD = 0, cI = Object.create(null);
       }
       S.lt = n;
       S.wInstUp = cWU; S.wInstDn = cWD;
+      {
+        const lanNow = n;
+        /* @BroTech-Reserved lan-core-integral.part.js */
+      }
       rUI(S.dWU, S.dWD, cSU, cSD, cI);
     } catch (err) {console.warn(err);} finally {window.__gIsF = !1;
     if (!(window.gegeTickCount = ((window.gegeTickCount || 0) + 1) & 7)) fAsusTopo();}
@@ -413,7 +418,7 @@ let cSU = 0, cSD = 0, cI = Object.create(null);
     const csvRowT = a => a.map(v => csvQ(String(v ?? ''))).join(','); // 仅限脚本自带可信常量
     return ((sp, now, start) => '\uFEFF' + [
       csvRow([`哥哥科技 硬路由 NPU 增强系列：专用组件 ${(typeof GM_info !== 'undefined' && GM_info.script?.version) || '环境不支持获取版本号'} 生成`]),
-            csvRow([`统计周期：${new Date(start + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} 至 ${new Date(now + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} (UTC${CONFIG.时区补偿 > 0 ? '+' : ''}${CONFIG.时区补偿 / 3600000})${CONFIG.readSaveData === 1 ? ' （含路由器后台读档）' : ''}`]),
+            csvRow([`统计周期：${new Date(start + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} 至 ${new Date(now + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} (UTC${CONFIG.时区补偿 > 0 ? '+' : ''}${CONFIG.时区补偿 / 3600000})${CONFIG.readSaveData === 1 ? ' （含路由器后台读档）' : CONFIG.readSaveData === 3 ? ' （积分以路由器后台计数为起点）' : ''}`]),
       csvRowT(['--- [全局统计] ---']),
       csvRow(['WAN总上传(b)','WAN总下载(b)','高精全局上行(b)','高精全局下行(b)','LAN积分总上行(b)','LAN积分总下行(b)','本次在线总上行(b)','本次在线总下行(b)']),
       csvRow([Math.round((sp.global?.wan_up||0) * 0.125),Math.round((sp.global?.wan_down||0) * 0.125),Math.round((sp.global?.lan_high_up||0) * 0.125),Math.round((sp.global?.lan_high_down||0) * 0.125),Math.round((sp.global?.lan_integral_up||0) * 0.125),Math.round((sp.global?.lan_integral_down||0) * 0.125),Math.round((sp.global?.lan_off_up||0) * 0.125),Math.round((sp.global?.lan_off_down||0) * 0.125)]),
@@ -440,6 +445,7 @@ function doSettle(nowMs) {
     S.wZEU = S.wZED = S.wZEUC = S.wZEDC = 0;
     // 结算以已完成采样为截点；下一份响应继续从同一真实采样时刻积分。
     const settledAt = S.lt || performance.now();
+    S.lTotUp = S.lTotDn = 0; S.lLT = settledAt;
     for (let k in S.cls) {
       let s = S.cls[k]; s.intUp = s.intDn = 0;
       s.uB = s.oU = s.lU ?? 0; s.dB = s.oD = s.lD ?? 0; s.lUT = settledAt;
@@ -682,7 +688,7 @@ S.rTick = ((S.rTick || 0) + 1) & 3;
         ol.innerHTML = `<div style="padding: 20px; width: 96%; max-width: 1600px; margin: 0 auto; min-height: 100%;"><div id="gege-board-anchor"></div><div id="config-list" class="config-list gege-list-container"><div class="gege-section"><div class="config-title">有线设备${(window.gegeHiddenDevices && Object.keys(window.gegeHiddenDevices).length > 0) ? '<span style="color: #ff4c00; font-size: 13px; font-weight: normal; margin-left: 10px; font-family: Consolas;">(哥哥科技：智能Mesh适配)</span>' : ''}</div>${hW.join('')||'<div class="gege-empty-state">没有连接设备</div>'}</div><div class="gege-section"><div class="config-title">无线设备（${S.is5G_149?'5.8GHz':'5.2GHz'}）</div>${h52.join('')||'<div class="gege-empty-state">没有连接设备</div>'}</div><div class="gege-section"><div class="config-title">无线设备（${S.is5G_149?'5.2GHz':'5.8GHz'}）</div>${h58.join('')||'<div class="gege-empty-state">没有连接设备</div>'}</div><div class="gege-section"><div class="config-title">无线设备（2.4GHz）</div>${h2.join('')||'<div class="gege-empty-state">没有连接设备</div>'}
                 </div>
         </div><div style="margin-top: 25px; padding-top: 15px; border-top: 1px dashed #eee; text-align: center; font-family: Consolas, 'Microsoft YaHei', sans-serif;"><div style="font-size: 11.5px; color: #777; font-style: italic; margin-bottom: 8px;">“在一个文明社会，干净的、不被监视与吸血的网络，是我们每个人的基本权利。”</div><div style="font-size: 10.5px; color: #999; line-height: 1.3; margin-bottom: 8px;">本交互式程序属于“哥哥软件”系列；需持续遵守署名条款方可获得使用权，二开或发行请参阅许可证；按“原样且免费”提供，不对其适用性、稳定性、精密度或任何商业场景合规性作担保；个人分享请直接转载官方链接。<br>基于本程序的任何修改、使用任意部分代码、再发布或相关衍生版本的合法性的前置条件是：在提供最终用户界面时，均应显著、实质保留所有“哥哥科技”与法律声明，不得删除、隐藏或降低其可见性。<a href="https://github.com/ucxn/Bro-Stat/blob/main/License.md" target="_blank" style="color: #777; text-decoration: underline;">查看许可证/分享</a>
-        <div style="font-size:12px;color:#555;"><svg xmlns="http://www.w3.org/2000/svg" width="131" height="18" viewBox="0 0 145 20" role="img" aria-label="Broware Attribution" style="vertical-align:middle;margin-right:6px"><defs><linearGradient id="bg1" x2="0" y2="1"><stop stop-color="#4b4b4b"/><stop offset=".5" stop-color="#333"/><stop offset="1" stop-color="#1f1f1f"/></linearGradient><linearGradient id="bg2" x2="0" y2="1"><stop stop-color="#52d58c"/><stop offset=".52" stop-color="#31bc71"/><stop offset="1" stop-color="#218b50"/></linearGradient><linearGradient id="sh" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".32"/><stop offset=".45" stop-color="#fff" stop-opacity=".08"/><stop offset=".46" stop-opacity="0"/><stop offset="1" stop-opacity=".1"/></linearGradient><clipPath id="c"><rect width="145" height="20" rx="4"/></clipPath></defs><g clip-path="url(#c)"><path fill="url(#bg1)" d="M0 0h24v20H0z"/><path fill="url(#bg2)" d="M24 0h121v20H24z"/><path fill="url(#sh)" d="M0 0h145v20H0z"/></g><g transform="translate(4 2)"><rect width="15" height="15" rx=".6" fill="#fff"/><rect x="1" y="1" width="13" height="13" fill="#58d18d"/><path fill="#fff" d="M1 1h7v7z"/><path fill="#32bf70" d="M8 1h6v13H8z"/><path fill="#1ba856" d="M1 14h7V8l6 6z"/></g><g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11"><text x="84" y="15" fill="#000" fill-opacity=".28">Broware Attribution</text><text x="84" y="14">Broware Attribution</text></g></svg><a href="https://github.com/ucxn/Bro-Stat" target="_blank" style="color: #0059fa; text-decoration: none; font-weight: bold;">Bro-Stat系列 增强组件</a><span title="构建日期：2026-08.20 23时&#10;架构设计：哥哥科技 BroTech&#10;Bilibili UID：501430041&#10;QQ群：680464365" style="background: rgba(0,0,0,0.04); padding: 2px 6px; border-radius: 4px; cursor: help; margin: 0 4px;">${(typeof GM_info !== 'undefined' && GM_info.script?.version) || '环境不支持获取版本号'} Copyright &copy; 2026 <a href="https://www.bilibili.com/video/BV1LZ6yBXESq" target="_blank" style="color: #0059fa; text-decoration: none; font-weight: bold;">哥哥科技</a> (BroTech)<span style="color: #888; font-weight: normal;"> | All Rights Reserved</span>&emsp;&nbsp;<a href="https://scriptcat.org/script-show-page/6675" target="_blank" style="color: #666; text-decoration: none;">点此分享</a>
+        <div style="font-size:12px;color:#555;"><svg xmlns="http://www.w3.org/2000/svg" width="131" height="18" viewBox="0 0 145 20" role="img" aria-label="Broware Attribution" style="vertical-align:middle;margin-right:6px"><defs><linearGradient id="bg1" x2="0" y2="1"><stop stop-color="#4b4b4b"/><stop offset=".5" stop-color="#333"/><stop offset="1" stop-color="#1f1f1f"/></linearGradient><linearGradient id="bg2" x2="0" y2="1"><stop stop-color="#52d58c"/><stop offset=".52" stop-color="#31bc71"/><stop offset="1" stop-color="#218b50"/></linearGradient><linearGradient id="sh" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".32"/><stop offset=".45" stop-color="#fff" stop-opacity=".08"/><stop offset=".46" stop-opacity="0"/><stop offset="1" stop-opacity=".1"/></linearGradient><clipPath id="c"><rect width="145" height="20" rx="4"/></clipPath></defs><g clip-path="url(#c)"><path fill="url(#bg1)" d="M0 0h24v20H0z"/><path fill="url(#bg2)" d="M24 0h121v20H24z"/><path fill="url(#sh)" d="M0 0h145v20H0z"/></g><g transform="translate(4 2)"><rect width="15" height="15" rx=".6" fill="#fff"/><rect x="1" y="1" width="13" height="13" fill="#58d18d"/><path fill="#fff" d="M1 1h7v7z"/><path fill="#32bf70" d="M8 1h6v13H8z"/><path fill="#1ba856" d="M1 14h7V8l6 6z"/></g><g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11"><text x="84" y="15" fill="#000" fill-opacity=".28">Broware Attribution</text><text x="84" y="14">Broware Attribution</text></g></svg><a href="https://github.com/ucxn/Bro-Stat" target="_blank" style="color: #0059fa; text-decoration: none; font-weight: bold;">Bro-Stat系列 增强组件</a><span title="构建日期：2026-10.13 17时&#34;架构设计：哥哥科技 BroTech&#10;Bilibili UID：501430041&#10;QQ群：680464365" style="background: rgba(0,0,0,0.04); padding: 2px 6px; border-radius: 4px; cursor: help; margin: 0 4px;">${(typeof GM_info !== 'undefined' && GM_info.script?.version) || '环境不支持获取版本号'} Copyright &copy; 2026 <a href="https://www.bilibili.com/video/BV1LZ6yBXESq" target="_blank" style="color: #0059fa; text-decoration: none; font-weight: bold;">哥哥科技</a> (BroTech)<span style="color: #888; font-weight: normal;"> | All Rights Reserved</span>&emsp;&nbsp;<a href="https://scriptcat.org/script-show-page/6675" target="_blank" style="color: #666; text-decoration: none;">点此分享</a>
         </div></div></div></div>`;
         S.DOM缓存 = null; S.DOM容器 = null;
       });}

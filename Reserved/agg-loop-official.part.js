@@ -1,6 +1,6 @@
 let tOD = 0,
-      LUp = 0,
-      LDn = 0,
+      LUp = S.lTotUp,
+      LDn = S.lTotDn,
       hpU = 0,
       hpD = 0,
       abU = 0,
@@ -15,8 +15,6 @@ let tOD = 0,
       let sessU = Math.max(0, (s.lU || 0) - (s.oU || 0));
       let sessD = Math.max(0, (s.lD || 0) - (s.oD || 0));
       tot_cU += cU;
-      LUp += s.intUp || 0;
-      LDn += s.intDn || 0;
       hpU += (CONFIG.readSaveData === 2 ? cU : sessU);
       hpD += (CONFIG.readSaveData === 2 ? cD : sessD);
       if (cC) {

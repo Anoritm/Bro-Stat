@@ -2,7 +2,7 @@
 // @name            小米路由器增强 Mi-Stat_Max
 // @name:en         MiWiFi-Stat_Max
 // @namespace       ucxn
-// @version         5.9.9.T
+// @version         5.9.9.U
 // @description     小米路由器增强组件 - 设备网速一键查看、WAN网速计算，设备流量统计与大屏查看
 // @copyright       哥哥科技. All Rights Reserved. 使用必要条件之一：不得删除源码、用户界面、文本中的任何“哥哥”；传播官方链接不限；除安装自用外任何使用传输均需查看许可证。
 // @description:en  Xiaomi Router Enhancement Module—One-click device speed check, WAN speed calculation, device traffic statistics, and large-screen viewing
@@ -33,7 +33,7 @@
 
   // ======== [0] 用户极客环境变量配置区 ========
   const CONFIG = {
-	readSaveData: 1, // 【历史记录】 1: 从路由器后台读档 | 0: 新局模式 | 2: 从本地长期历史读档
+	readSaveData: 1, // 【历史记录】 1: 从路由器后台读档 | 0: 新局模式 | 2: 从本地长期历史读档 | 3: 启动时用后台临时值充当积分
     uiLayout: 1, // 【面板拓扑结构】 0: 经典版 | 1: 详细紧凑版(驾驶舱美学) | 2: 详细平铺版(报表流美学)
     injectMode: 3, // 【UI注入模式】 0: 原生侧边栏(1min)| 1: 仅悬浮舱 | 2: 智能选一 | 3：默认模式
     calcMode: 1, // 1: 上行/下行倍数模式, 0: 上行占总和比例模式
@@ -100,6 +100,7 @@ const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&q
     w2U: 0, w2D: 0, w2TotUp: 0, w2TotDn: 0, w2LT: undefined,
     hasW2: !1, is5G_149: !1, oWU:0, Warn_MS: 0, Force_MS: 0, _RST: !1,
     aWu: 0, aWd: 0, lwTU: 0, lwTD: 0, cSnap: null,
+    lTotUp: 0, lTotDn: 0, lInstU: 0, lInstD: 0, lLT: undefined,
     总上行图: new Float64Array(8192), 总下行图: new Float64Array(8192), 总图点数: 0,
     wMaxU: 0, wMaxD: 0, wMinU: Infinity, wMinD: Infinity, 图表拖: null, 图表待画: 0
   };
@@ -321,7 +322,7 @@ async function rSD() {
         else if (cWD > 0) { const wED = cWD * 0.5 * CONFIG.wanRefreshInterval; S.wTotDn += wED; S.wZED = (S.wZED || 0) + wED; S.wZEDC = (S.wZEDC || 0) + 1; }
         S.wLT = n;
       }
-      if (CONFIG.readSaveData === 2 && !S.snapLoaded) { try { let sp = typeof GM_getValue !== 'undefined' ? GM_getValue('ha_snapshot') : null; S.snap = sp && sp.timestamp > (typeof GM_getValue !== 'undefined' ? (GM_getValue('gege_reset_ms', 0) || 0) : 0) ? sp : {}; if(S.snap.global) { S.wTotUp = S.wTotUp === 0 ? S.snap.global.wan_up || 0 : S.wTotUp; S.wTotDn = S.wTotDn === 0 ? S.snap.global.wan_down || 0 : S.wTotDn; } } catch(e){console.warn(e);} S.snapLoaded = !0; }
+      if (CONFIG.readSaveData === 2 && !S.snapLoaded) { try { let sp = typeof GM_getValue !== 'undefined' ? GM_getValue('ha_snapshot') : null; S.snap = sp && sp.timestamp > (typeof GM_getValue !== 'undefined' ? (GM_getValue('gege_reset_ms', 0) || 0) : 0) ? sp : {}; if(S.snap.global) { S.wTotUp = S.wTotUp === 0 ? S.snap.global.wan_up || 0 : S.wTotUp; S.wTotDn = S.wTotDn === 0 ? S.snap.global.wan_down || 0 : S.wTotDn; S.lTotUp = S.lTotUp === 0 ? S.snap.global.lan_integral_up || 0 : S.lTotUp; S.lTotDn = S.lTotDn === 0 ? S.snap.global.lan_integral_down || 0 : S.lTotDn; } } catch(e){console.warn(e);} S.snapLoaded = !0; }
       const 本轮刷新接口 = new Set();
       for (const m in cI) {
         const cC = cI[m];
@@ -331,9 +332,9 @@ async function rSD() {
           let 有累计 = 有累计MAC.has(m);
           cS = S.cls[m] = {
             upR: cC.upRate, dnR: cC.dnRate, lUT: n,
-            intUp: spD ? (spD.integral_up || 0) : 0, intDn: spD ? (spD.integral_down || 0) : 0,
-            uB: 有累计 && CONFIG.readSaveData !== 1 ? (spD ? cC.offUp - (spD.up || 0) : cC.offUp) : 0,
-            dB: 有累计 && CONFIG.readSaveData !== 1 ? (spD ? cC.offDn - (spD.down || 0) : cC.offDn) : 0,
+            intUp: 有累计 && CONFIG.readSaveData === 3 ? cC.offUp : (spD ? (spD.integral_up || 0) : 0), intDn: 有累计 && CONFIG.readSaveData === 3 ? cC.offDn : (spD ? (spD.integral_down || 0) : 0),
+            uB: 有累计 && !(CONFIG.readSaveData & 1) ? (spD ? cC.offUp - (spD.up || 0) : cC.offUp) : 0,
+            dB: 有累计 && !(CONFIG.readSaveData & 1) ? (spD ? cC.offDn - (spD.down || 0) : cC.offDn) : 0,
             lU: 有累计 ? cC.offUp : undefined, lD: 有累计 ? cC.offDn : undefined, aR: !1, dpU: 0, dpD: 0,
             oU: 有累计 ? cC.offUp : 0, oD: 有累计 ? cC.offDn : 0, name: spD?.name || cC.name || m, hU: new Float64Array(64), hD: new Float64Array(64), hIdx: 0, ifc: cC.iface // 真实流量与环形缓冲
           };
@@ -343,7 +344,8 @@ async function rSD() {
           if (有累计) {
             if (cS.lU === undefined || cS.lD === undefined) {
               cS.lU = cC.offUp; cS.lD = cC.offDn; cS.oU = cC.offUp; cS.oD = cC.offDn;
-              cS.uB = CONFIG.readSaveData === 1 ? 0 : cC.offUp; cS.dB = CONFIG.readSaveData === 1 ? 0 : cC.offDn;
+              cS.uB = CONFIG.readSaveData & 1 ? 0 : cC.offUp; cS.dB = CONFIG.readSaveData & 1 ? 0 : cC.offDn;
+              if (CONFIG.readSaveData === 3) { cS.intUp = cC.offUp; cS.intDn = cC.offDn; }
               cS.dpU = cS.dpD = 0; cS.aR = !1;
             } else {
               let dU = cC.offUp - cS.lU, dD = cC.offDn - cS.lD;
@@ -391,6 +393,17 @@ async function rSD() {
       }
       S.lt = n;
       if (wanRateValid) { S.wInstUp = cWU; S.wInstDn = cWD; }
+      {
+        const lanNow = n;
+        if (S.lLT === undefined) S.lLT = lanNow;
+        else if (cSU !== S.lInstU || cSD !== S.lInstD) {
+          const lDt = lanNow - S.lLT;
+          if (S.lInstU > 0) S.lTotUp += (S.lInstU + cSU) * lDt * 0.0005; else if (cSU > 0) S.lTotUp += cSU * 0.5 * CONFIG.lanRefreshInterval;
+          if (S.lInstD > 0) S.lTotDn += (S.lInstD + cSD) * lDt * 0.0005; else if (cSD > 0) S.lTotDn += cSD * 0.5 * CONFIG.lanRefreshInterval;
+          S.lLT = lanNow;
+        }
+        S.lInstU = cSU; S.lInstD = cSD;
+      }
       rUI(cWU, cWD, cSU, cSD, cI);
     } catch (err) {console.warn(err);} finally {window.__gIsF = !1;}
   }
@@ -406,7 +419,7 @@ async function rSD() {
     const csvRowT = a => a.map(v => csvQ(String(v ?? ''))).join(','); // 仅限脚本自带可信常量
     return ((sp, now, start) => '\uFEFF' + [
       csvRow([`哥哥科技 硬路由 NPU 增强系列：专用组件 ${版本号} 生成`]),
-      csvRow([`统计周期：${new Date(start + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} 至 ${new Date(now + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} (UTC${CONFIG.时区补偿 > 0 ? '+' : ''}${CONFIG.时区补偿 / 3600000})${CONFIG.readSaveData === 1 ? ' （含路由器后台读档）' : ''}`]),
+      csvRow([`统计周期：${new Date(start + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} 至 ${new Date(now + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} (UTC${CONFIG.时区补偿 > 0 ? '+' : ''}${CONFIG.时区补偿 / 3600000})${CONFIG.readSaveData === 1 ? ' （含路由器后台读档）' : CONFIG.readSaveData === 3 ? ' （积分以路由器后台计数为起点）' : ''}`]),
       csvRowT(['--- [全局统计] ---']),
       csvRow(['WAN总上传(bit)','WAN总下载(b)','高精全局上行(b)','高精全局下行(b)','LAN积分总上行(b)','LAN积分总下行(b)','本次在线总上行(b)','本次在线总下行(b)']),
       csvRow([Math.round(sp.global?.wan_up||0),Math.round(sp.global?.wan_down||0),Math.round(sp.global?.lan_high_up||0),Math.round(sp.global?.lan_high_down||0),Math.round(sp.global?.lan_integral_up||0),Math.round(sp.global?.lan_integral_down||0),Math.round(sp.global?.lan_off_up||0),Math.round(sp.global?.lan_off_down||0)]),
@@ -436,7 +449,7 @@ function doSettle(nowMs) {
     window.gegeForceUIRedraw = !0; // 重绘 UI
     setTimeout(() => { S._RST = !1; }, 2000); // 解开安全锁
     GM_setValue('ha_snapshot', { timestamp: nowMs, global: {}, devices: {} }); S.snap = {}; S.cSnap = null;
-    S.wTotUp = S.wTotDn = S.w2TotUp = S.w2TotDn = 0; // 内存原地清零
+    S.wTotUp = S.wTotDn = S.w2TotUp = S.w2TotDn = S.lTotUp = S.lTotDn = 0; S.lLT = performance.now(); // 内存原地清零
     for (let k in S.cls) { let s = S.cls[k]; s.intUp = s.intDn = 0; s.uB = s.oU = s.lU; s.dB = s.oD = s.lD; s.hU.fill(0); s.hD.fill(0); } // 内存原地清零底表
   }
 
@@ -529,8 +542,8 @@ function doSettle(nowMs) {
 
   function rUI(wU, wD, sU, sD, cI) {
     let tOD = 0,
-      LUp = 0,
-      LDn = 0,
+      LUp = S.lTotUp,
+      LDn = S.lTotDn,
       hpU = 0,
       hpD = 0,
       abU = 0,
@@ -546,7 +559,7 @@ for (let k in S.cls) {
       let cD = Math.max(0, (s.lD || 0) - (s.dB || 0));
       let sessU = Math.max(0, (s.lU || 0) - (s.oU || 0));
       let sessD = Math.max(0, (s.lD || 0) - (s.oD || 0));
-      tot_cU += cU; LUp += s.intUp || 0; LDn += s.intDn || 0;
+      tot_cU += cU;
       hpU += (CONFIG.readSaveData === 2 ? cU : sessU); 
       hpD += (CONFIG.readSaveData === 2 ? cD : sessD);
       if (cC) { curHpU += (CONFIG.readSaveData === 2 ? cU : sessU); curHpD += (CONFIG.readSaveData === 2 ? cD : sessD); tOD += cC.offDn || 0; }

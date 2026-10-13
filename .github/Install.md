@@ -20,6 +20,7 @@
 | **腾达 Tenda** | [安装腾达版](https://raw.githubusercontent.com/ucxn/Bro-Stat/main/Tenda-1.user.js) |
 | **小米 / MiWiFi** | [安装小米版](https://raw.githubusercontent.com/ucxn/Bro-Stat/main/Mi-WiFi_RD.user.js) |
 | **中兴 ZTE** | [安装 ZTE-Stat_Max](https://raw.githubusercontent.com/ucxn/ZTE-Stat_Max/main/new.user.js) |
+| **锐捷 / Reyee** | [安装锐捷版](https://raw.githubusercontent.com/ucxn/Bro-Stat/main/Ruijie-1.user.js) |
 
 点击对应链接后，脚本管理器通常会自动弹出安装页面。
 #### 故障排查
@@ -70,6 +71,7 @@ Choose the router brand you are using:
 | **Tenda** | [Install Tenda](https://raw.githubusercontent.com/ucxn/Bro-Stat/main/Tenda-1.user.js) |
 | **Xiaomi / MiWiFi** | [Install Xiaomi](https://raw.githubusercontent.com/ucxn/Bro-Stat/main/Mi-WiFi_RD.user.js) |
 | **ZTE** | [Install ZTE-Stat_Max](https://raw.githubusercontent.com/ucxn/ZTE-Stat_Max/main/new.user.js) |
+| **RuiJie / Reyee** | [Install Reyee](https://raw.githubusercontent.com/ucxn/Bro-Stat/main/Ruijie-1.user.js) |
 
 After clicking the corresponding link, your userscript manager should automatically open the installation page.
 ### Trouble?

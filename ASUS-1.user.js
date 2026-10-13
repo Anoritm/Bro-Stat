@@ -2,7 +2,7 @@
 // @name            华硕路由器增强 ASUS/ROG 路由器 WiFi 后台插件
 // @name:en         Bro-Stat-ASUS for ROG/TUF Router
 // @namespace       ucxn
-// @version         5.9.9
+// @version         5.9.T
 // @description     适用于华硕/TUF/ASUS/ROG路由器的网页端网速查看和显示优化的增强脚本插件
 // @copyright       哥哥科技. All Rights Reserved. 使用必要条件之一：不得删除源码、用户界面、文本中的任何“哥哥”；传播官方链接不限；除安装自用外任何使用传输均需查看许可证。
 // @description:en  An enhanced script plugin for viewing and optimizing internet speed on the web interface of ASUS/TUF/ROG routers
@@ -37,7 +37,7 @@
 
   // ======== [0] 用户极客环境变量配置区 ========
   const CONFIG = {
-    readSaveData: 2, // 【历史记录】 1: 从路由器后台读档 | 0: 新局模式 | 2: 从本地长期历史读档
+    readSaveData: 3, // 【历史记录】 1: 从路由器后台读档 | 0: 新局模式 | 2: 从本地长期历史读档 | 3: 启动时用后台临时值充当积分
     uiLayout: 1, // 【面板拓扑结构】 0: 经典版 | 1: 详细紧凑版(驾驶舱美学) | 2: 详细平铺版(报表流美学)
     injectMode: 3, // 【UI注入模式】 0: 原生侧边栏(1min)| 1: 仅悬浮舱 | 2: 智能选一 | 3：默认模式
     calcMode: 1, // 1: 上行/下行倍数模式, 0: 上行占总和比例模式
@@ -82,6 +82,7 @@
     w2U: 0, w2D: 0, w2TotUp: 0, w2TotDn: 0, w2LT: undefined,
     hasW2: !1, is5G_149: !1, oWU:0, Warn_MS: 0, Force_MS: 0, _RST: !1,
     aWu: 0, aWd: 0, lwTU: 0, lwTD: 0, cSnap: null,
+    lTotUp: 0, lTotDn: 0, lInstU: 0, lInstD: 0, lLT: undefined,
     DOM缓存: null, DOM容器: null, 有线统一PHY: 0, 主节点MAC: '', 端口请求中: !1,
     总上行图: new Float64Array(8192), 总下行图: new Float64Array(8192), 总图点数: 0,
     wMaxU: 0, wMaxD: 0, wMinU: Infinity, wMinD: Infinity, 图表拖: null, 图表待画: 0
@@ -202,7 +203,7 @@ async function rSD() {
         try {
           let sp = typeof GM_getValue !== 'undefined' ? GM_getValue('ha_snapshot') : null;
           if (sp && sp.timestamp > (typeof GM_getValue !== 'undefined' ? (GM_getValue('gege_reset_ms', 0) || 0) : 0)) {
-            S.wLedgerUp = sp.global?.wan_up || 0; S.wLedgerDn = sp.global?.wan_down || 0;
+            S.wLedgerUp = sp.global?.wan_up || 0; S.wLedgerDn = sp.global?.wan_down || 0; S.lTotUp = sp.global?.lan_integral_up || 0; S.lTotDn = sp.global?.lan_integral_down || 0;
             for (const [m, d] of Object.entries(sp.devices || {})) S.cls[m] = {
               upR: 0, dnR: 0, lUT: n, lU: undefined, lD: undefined,
               intUp: d.integral_up || 0, intDn: d.integral_down || 0,
@@ -288,9 +289,9 @@ let cSU = 0, cSD = 0, cI = Object.create(null);
         const cC = cI[m];
         S.cls[m] ??= {
           upR: cC.upRate, dnR: cC.dnRate, lUT: n, 
-          intUp: 0, intDn: 0,
-          uB: CONFIG.readSaveData === 1 ? 0 : cC.offUp, 
-          dB: CONFIG.readSaveData === 1 ? 0 : cC.offDn,
+          intUp: CONFIG.readSaveData === 3 ? cC.offUp : 0, intDn: CONFIG.readSaveData === 3 ? cC.offDn : 0,
+          uB: CONFIG.readSaveData & 1 ? 0 : cC.offUp, 
+          dB: CONFIG.readSaveData & 1 ? 0 : cC.offDn,
           lU: cC.offUp, lD: cC.offDn, aR: !1, dpU: 0, dpD: 0,
           oU: cC.offUp, oD: cC.offDn, name: cC.name || m, ip: cC.ip || '', hU: new Float64Array(64), hD: new Float64Array(64), hIdx: 0
         };
@@ -327,6 +328,17 @@ let cSU = 0, cSD = 0, cI = Object.create(null);
       }
       S.lt = n;
       S.wInstUp = cWU; S.wInstDn = cWD;
+      {
+        const lanNow = n;
+        if (S.lLT === undefined) S.lLT = lanNow;
+        else if (cSU !== S.lInstU || cSD !== S.lInstD) {
+          const lDt = lanNow - S.lLT;
+          if (S.lInstU > 0) S.lTotUp += (S.lInstU + cSU) * lDt * 0.0005; else if (cSU > 0) S.lTotUp += cSU * 0.5 * CONFIG.lanRefreshInterval;
+          if (S.lInstD > 0) S.lTotDn += (S.lInstD + cSD) * lDt * 0.0005; else if (cSD > 0) S.lTotDn += cSD * 0.5 * CONFIG.lanRefreshInterval;
+          S.lLT = lanNow;
+        }
+        S.lInstU = cSU; S.lInstD = cSD;
+      }
       rUI(S.dWU, S.dWD, cSU, cSD, cI);
     } catch (err) {console.warn(err);} finally {window.__gIsF = !1;
     if (!(window.gegeTickCount = ((window.gegeTickCount || 0) + 1) & 7)) fAsusTopo();}
@@ -343,7 +355,7 @@ let cSU = 0, cSD = 0, cI = Object.create(null);
     const csvRowT = a => a.map(v => csvQ(String(v ?? ''))).join(','); // 仅限脚本自带可信常量
     return ((sp, now, start) => '\uFEFF' + [
       csvRow([`哥哥科技 硬路由 NPU 增强系列：专用组件 ${(typeof GM_info !== 'undefined' && GM_info.script?.version) || '环境不支持获取版本号'} 生成`]),
-            csvRow([`统计周期：${new Date(start + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} 至 ${new Date(now + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} (UTC${CONFIG.时区补偿 > 0 ? '+' : ''}${CONFIG.时区补偿 / 3600000})${CONFIG.readSaveData === 1 ? ' （含路由器后台读档）' : ''}`]),
+            csvRow([`统计周期：${new Date(start + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} 至 ${new Date(now + CONFIG.时区补偿).toISOString().replace('T', ' ').slice(0, 19)} (UTC${CONFIG.时区补偿 > 0 ? '+' : ''}${CONFIG.时区补偿 / 3600000})${CONFIG.readSaveData === 1 ? ' （含路由器后台读档）' : CONFIG.readSaveData === 3 ? ' （积分以路由器后台计数为起点）' : ''}`]),
       csvRowT(['--- [全局统计] ---']),
       csvRow(['WAN总上传(b)','WAN总下载(b)','高精全局上行(b)','高精全局下行(b)','LAN积分总上行(b)','LAN积分总下行(b)','本次在线总上行(b)','本次在线总下行(b)']),
       csvRow([Math.round((sp.global?.wan_up||0) * 0.125),Math.round((sp.global?.wan_down||0) * 0.125),Math.round((sp.global?.lan_high_up||0) * 0.125),Math.round((sp.global?.lan_high_down||0) * 0.125),Math.round((sp.global?.lan_integral_up||0) * 0.125),Math.round((sp.global?.lan_integral_down||0) * 0.125),Math.round((sp.global?.lan_off_up||0) * 0.125),Math.round((sp.global?.lan_off_down||0) * 0.125)]),
@@ -379,6 +391,7 @@ function doSettle(nowMs) {
     S.wZEU = S.wZED = S.wZEUC = S.wZEDC = 0;
     // 结算以已完成采样为截点；下一份响应继续从同一真实采样时刻积分。
     const settledAt = S.lt || performance.now();
+    S.lTotUp = S.lTotDn = 0; S.lLT = settledAt;
     for (let k in S.cls) {
       let s = S.cls[k]; s.intUp = s.intDn = 0;
       s.uB = s.oU = s.lU ?? 0; s.dB = s.oD = s.lD ?? 0; s.lUT = settledAt;
@@ -495,8 +508,8 @@ function doSettle(nowMs) {
 
   function rUI(wU, wD, sU, sD, cI) {
     let tOD = 0,
-      LUp = 0,
-      LDn = 0,
+      LUp = S.lTotUp,
+      LDn = S.lTotDn,
       hpU = 0,
       hpD = 0,
       abU = 0,
@@ -511,8 +524,6 @@ function doSettle(nowMs) {
       let sessU = Math.max(0, (s.lU || 0) - (s.oU || 0));
       let sessD = Math.max(0, (s.lD || 0) - (s.oD || 0));
       tot_cU += cU;
-      LUp += s.intUp || 0;
-      LDn += s.intDn || 0;
       hpU += (CONFIG.readSaveData === 2 ? cU : sessU);
       hpD += (CONFIG.readSaveData === 2 ? cD : sessD);
       if (cC) {
