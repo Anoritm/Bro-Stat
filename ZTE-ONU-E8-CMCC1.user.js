@@ -80,6 +80,7 @@
   // ======== [2] 取数与解析（光猫页面是 gb2312 的老式表格页） ========
   async function getPage(name) {
     const r = await fetch(`/getpage.gch?pid=1002&nextpage=${name}.gch`, { credentials: 'same-origin', cache: 'no-store' });
+    if (r.status === 403) S.forbidden = true; // 光猫明确拒绝：不再继续敲门，本轮结束即停
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const buf = await r.arrayBuffer(), n = performance.now(); // 以响应到达时刻为本页数据的时间
     return { t: gbk.decode(buf), n };
@@ -262,19 +263,30 @@
     S.busy = true; const t0 = performance.now();
     try {
       await run('pon', async () => { const { t, n } = await getPage('pon_status_stat_info_t'); ingestPon(parsePon(t), n); });
-      await run('topo', async () => { const { t, n } = await getPage('topo_t'); ingestTopo(parseTopo(t), n); });
-      if (S.tick % CONFIG.slowEvery === 0) {
+      if (!S.forbidden) await run('topo', async () => { const { t, n } = await getPage('topo_t'); ingestTopo(parseTopo(t), n); });
+      if (!S.forbidden && S.tick % CONFIG.slowEvery === 0) {
         await run('lan', async () => { const { t, n } = await getPage('status_lan_info_t'); ingestLan(parseLan(t), n); });
-        await run('wlan', async () => { const { t, n } = await getPage('e8_status_wlan_info_t'); ingestWlan(parseWlan(t), n); });
+        if (!S.forbidden) await run('wlan', async () => { const { t, n } = await getPage('e8_status_wlan_info_t'); ingestWlan(parseWlan(t), n); });
       }
     } finally {
       S.tick++; S.busy = false;
-      if ((S.fail.pon || 0) >= 5 && (S.fail.topo || 0) >= 5) { S.run = false; S.paused = true; }
+      if (S.forbidden || ((S.fail.pon || 0) >= 5 && (S.fail.topo || 0) >= 5)) { S.run = false; S.paused = true; }
       render();
-      if (S.run) setTimeout(cycle, Math.max(0, CONFIG.refreshInterval * 1000 - (performance.now() - t0)));
+      // 按周期起点对齐，但无论光猫多慢，两轮之间至少留出半个周期的空闲，不让请求首尾相接
+      if (S.run) setTimeout(cycle, Math.max(CONFIG.refreshInterval * 500, CONFIG.refreshInterval * 1000 - (performance.now() - t0)));
     }
   }
-  function start() { if (S.run) return; S.run = true; S.paused = false; S.fail = {}; cycle(); }
+  function start() { if (S.run) return; S.run = true; S.paused = S.forbidden = false; S.fail = {}; cycle(); }
+  // 只在面板打开时采样。关面板即停：光猫每渲染一页就换发一次 _SESSION_TOKEN，后台持续轮询会让用户正在看的官方页面手里的令牌过期，
+  // 官方页面的提交（IF_ENCODE 也以该令牌为密钥）就会被拒。停采样时把积分结清，下次打开从零速率起步，不把关闭期间当成匀速积进去
+  function stop() {
+    if (!S.run) return;
+    S.run = false; const n = performance.now();
+    S.wanIntU.close(n); S.wanIntD.close(n);
+    for (const d of S.devs.values()) { d.iu.close(n); d.id.close(n); }
+    const f = document.getElementById('mainFrame'); // 官方内容页重新加载一次，拿到当前有效的令牌
+    if (f?.contentWindow) f.contentWindow.location.href = f.contentWindow.location.href;
+  }
 
   // ======== [6] 界面 ========
   // 看板、总速率图、终端卡片沿用 Bro-Stat 原生组件（华为 / 锐捷同款），其余为光猫版自有的表格模块
@@ -297,8 +309,9 @@
 #bro-ont-ov td.up{color:#ff4c00}#bro-ont-ov td.dn{color:#0059fa}
 #bro-ont-ov .off{opacity:.45}
 #bro-ont-ov .chip{display:inline-block;margin:0 8px 4px 0;padding:2px 8px;background:#eef3ff;border-radius:10px;font-size:12px}
+#bro-ont-ov .help{background:#fff;color:#333;padding:14px 18px;margin-bottom:12px;border-radius:6px;border:1px solid #e5e5e5;border-left:5px solid #0059fa;font-size:13px;line-height:1.85;box-shadow:0 2px 8px rgba(0,0,0,.05)}#bro-ont-ov .help-t{font-weight:bold;font-size:14px;margin-bottom:6px}#bro-ont-ov .help a,#bro-ont-ov .alert a{color:#0059fa;font-weight:bold;text-decoration:none}
 #bro-ont-ov .alert{background:#fff3cd;color:#856404;border-left:5px solid #ffc107;border-radius:6px;padding:10px 14px;margin-bottom:12px;font-weight:600}
-#bro-ont-ov .stale section,#bro-ont-ov .stale .gege-list-container{opacity:.45}
+#bro-ont-ov .stale section,#bro-ont-ov .stale .gege-list-container,#bro-ont-ov .stale #zte-geek-board{opacity:.45}
 #bro-ont-ov .offpage section,#bro-ont-ov .offpage #zte-geek-board,#bro-ont-ov .offpage .gege-list-container{display:none}
 #bro-ont-ov .strip{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:#555;margin-bottom:12px;padding:6px 10px;background:#fff;border-radius:6px}#bro-ont-ov .strip .ok{color:#2b8a3e}#bro-ont-ov .strip .no{color:#d6001c}
 #bro-ont-ov #zte-geek-board{position:relative;overflow:visible;border-left:4px solid #0059fa;padding:5px 0 15px 15px;margin:4px 0 15px;border-bottom:1px solid #e6e8eb;font-size:14px;display:flex;flex-direction:column;gap:6px}
@@ -464,7 +477,7 @@
     const pin = $('#gege-pin-btn', ov), board = $('#zte-geek-board', ov);
     pin.onclick = () => { S.isPinned = !S.isPinned; board.classList.toggle('geek-frozen-pane', S.isPinned); pin.classList.toggle('active', S.isPinned); };
     const root = document.documentElement, keep = root.style.overflow;
-    const toggle = show => { ov.style.display = show ? 'flex' : 'none'; ball.style.display = show ? 'none' : ''; root.style.overflow = show ? 'hidden' : keep; if (show) { if (isMain) start(); render(); } };
+    const toggle = show => { ov.style.display = show ? 'flex' : 'none'; ball.style.display = show ? 'none' : ''; root.style.overflow = show ? 'hidden' : keep; if (show) { if (isMain) start(); render(); } else stop(); };
     ball.onclick = () => toggle(true);
     $('#zo-x', ov).onclick = () => toggle(false);
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && ov.style.display === 'flex') toggle(false); });
@@ -569,14 +582,20 @@
     bd.classList.toggle('offpage', !isMain);
     if (!isMain) { // 流氓匹配也会进到登录页等页面：明确告诉用户脚本已运行，只是页面不对
       $('#zo-st').textContent = '未采样';
-      $('#zo-alert').innerHTML = `<div class="alert">✅ 脚本已正常运行（V${esc(VER)}），但当前页面（${esc(location.pathname)}）不是光猫登录后的主界面 start.ghtml，所以没有开始采样。<br>请先登录光猫后台；若已登录仍看到此提示，说明你的固件外壳页地址不同，请联系开发者（带 F12 抓包）。</div>`;
+      $('#zo-alert').innerHTML = `<div class="help"><div class="help-t">🧭 脚本已正常运行（V${esc(VER)}），但当前页面（${esc(location.pathname)}）没有可采样的数据，请按你的设备类型选择：</div>`
+        + '<div>• 如果你使用的是<b>中兴光猫</b>（E8 / gch 老式界面）：请先登录光猫后台，脚本只在登录后的主界面开始采样；若已登录仍看到这条提示，说明你的固件外壳页地址不同，请联系开发者，使用 Chrome 浏览器的 <b>F12 → 网络（Network）</b> 抓包发给我适配。</div>'
+        + '<div>• 如果你使用的是<b>中兴家用消费级路由器</b>，例如常见的问天、巡天、晴天、星云、小方糖等系列：请进入主项目 <a href="https://github.com/ucxn/ZTE-Stat_Max" target="_blank" rel="noopener">ZTE-Stat_Max</a> 下载，那边才是为你的设备做的完整版。</div>'
+        + '<div>• 如果你使用的是<b>其它品牌的路由器</b>：请打开 <a href="https://github.com/ucxn/Bro-Stat" target="_blank" rel="noopener">Bro-Stat 项目</a>，安装对应品牌的版本。</div>'
+        + '<div>• 若以上都对不上号，请联系开发者，并使用<b>视频</b>的方式进行协助。</div></div>';
       return;
     }
-    $('#zo-st').textContent = `采样 ${CONFIG.refreshInterval}s · 轮次 ${S.tick}`;
+    $('#zo-st').textContent = S.paused ? `已停止 · 轮次 ${S.tick}` : `采样 ${CONFIG.refreshInterval}s · 轮次 ${S.tick}`;
     const ago = k => { const a = (Date.now() - S.ok[k]) / 1000; return a < 90 ? Math.round(a) + 's前' : Math.round(a / 60) + 'min前'; };
     const strip = [['pon', '外网'], ['topo', '终端'], ['lan', 'LAN口'], ['wlan', 'Wi-Fi口']].map(([k, n]) =>
       S.err[k] ? `<span class="no" title="${esc(S.err[k])}">✗ ${n}：${esc(S.err[k])}</span>` : S.ok[k] ? `<span class="ok">✓ ${n} ${ago(k)}</span>` : `<span>… ${n}</span>`).join('');
-    $('#zo-alert').innerHTML = (S.paused ? '<div class="alert">⛔ 已暂停：外网与拓扑连续读取失败。请刷新页面重新登录后再试；仍失败请参阅 <a href="https://github.com/ucxn/Bro-Stat/blob/main/.github/Install.md#故障排查" target="_blank" rel="noopener">故障排查</a>，或联系开发者（带 F12 抓包）。</div>' : '')
+    $('#zo-alert').innerHTML = (!S.paused ? '' : S.forbidden
+      ? '<div class="alert">⛔ 光猫拒绝了请求（HTTP 403 Forbidden），采样已立即停止，不会继续请求。请关闭面板、刷新页面并重新登录光猫后再打开；如果一打开就再次出现，请联系开发者，并附上 F12 → 网络（Network）里那条 403 请求的截图。</div>'
+      : '<div class="alert">⛔ 已暂停：外网与拓扑连续 5 次读取失败，通常是登录已过期。请刷新页面重新登录光猫后再打开面板；仍失败请联系开发者（带 F12 抓包）。</div>')
       + `<div class="strip">${strip}</div>`;
     bd.classList.toggle('stale', !!S.paused); // 暂停后数据停留在最后一次成功采样，变灰提示
     const dv = [...S.devs.values()];
