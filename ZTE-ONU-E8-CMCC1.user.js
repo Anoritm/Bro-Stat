@@ -42,7 +42,7 @@
     let last = 0; try { last = +sessionStorage.getItem('bro-ont-heal') || 0; } catch {}
     if (Date.now() - last > 15000) { try { sessionStorage.setItem('bro-ont-heal', Date.now()); } catch {} location.replace(location.href); return; }
   }
-  const isMain = /\/start\.ghtml/i.test(location.pathname); // 流氓匹配会进到登录页等其它页面；只有登录后的外壳页才采样
+  const isMain = /\/start\.ghtml/i.test(location.pathname); // 全量匹配会进到登录页等其它页面；只有登录后的外壳页才采样
 
   const VER = (typeof GM_info !== 'undefined' && GM_info.script?.version) || '5.9.9.E';
   console.log(`🚀 哥哥科技 光猫版 V${VER} 已装载...`);
@@ -608,7 +608,7 @@
     const ov = $('#bro-ont-ov'); if (!ov || ov.style.display !== 'flex') return;
     const bd = $('.bd', ov);
     bd.classList.toggle('offpage', !isMain);
-    if (!isMain) { // 流氓匹配也会进到登录页等页面：明确告诉用户脚本已运行，只是页面不对
+    if (!isMain) { // 广泛匹配也会进到登录页等页面：明确告诉用户脚本已运行，只是页面不对
       $('#zo-st').textContent = '未采样';
       $('#zo-alert').innerHTML = `<div class="help"><div class="help-t">🧭 脚本已正常运行（V${esc(VER)}），但当前页面（${esc(location.pathname)}）没有可采样的数据，请按你的设备类型选择：</div>`
         + '<div>• 如果你使用的是<b>中兴光猫</b>（E8 / gch 老式界面）：请先登录光猫后台，脚本只在登录后的主界面开始采样；若已登录仍看到这条提示，说明你的固件外壳页地址不同，请联系开发者，使用 Chrome 浏览器的 <b>F12 → 网络（Network）</b> 抓包发给我适配。</div>'
