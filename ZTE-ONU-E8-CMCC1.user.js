@@ -2,13 +2,13 @@
 // @name            中兴光猫增强 ZTE-ONT_Stat
 // @name:en         ZTE-ONT_Stat
 // @namespace       ucxn
-// @version         5.9.9.E
-// @description     适用于中兴光猫（E8 / gch 老式界面）的网速与流量增强：外网速率由 PON 口累计字节求导，无线终端逐设备实时速率与积分，LAN口 / Wi-Fi 口流量对比
+// @version         5.9.E
+// @description     适用于中兴光猫（E8 / gch 老式界面）的网速与流量增强：外网速率由 PON 口累计字节求导，无线终端逐设备实时速率与积分，LAN口 / Wi-Fi 口流量对比。不知道是否支持电信光猫。
 // @description:en  Speed and traffic enhancement for ZTE ONU/ONT gateways (legacy E8/gch UI): WAN speed differentiated from PON byte counters, per-terminal Wi-Fi rate integration, LAN / Wi-Fi port traffic comparison.
 // @copyright       哥哥科技. All Rights Reserved. 使用必要条件之一：不得删除源码、用户界面、文本中的任何“哥哥”；传播官方链接不限；除安装自用外任何使用传输均需查看许可证。
 // @author          哥哥科技 space.bilibili.com/501430041
 // @noframes
-// @tag             路由器 中兴 光猫 ONU ONT E8 PON 移动 CMCC 宽带 网络 监控 统计 数据 可视化 极客 增强 UI 流量 网速 WAN 微积分 导数 测控 算法 Measurement M&C Bro Brotech Bro-Tech Bro-Stat 哥哥科技
+// @tag             中兴 光猫 电信 联通 ONU ONT E8 PON 移动 CMCC CU ChinaNet 宽带 网络 监控 统计 数据 可视化 极客 增强 UI 流量 网速 WAN 微积分 导数 测控 算法 Measurement M&C Bro Brotech Bro-Tech Bro-Stat 哥哥科技 ISP 运营商 Carrier
 // @icon            https://scriptcat.org/api/v2/resource/image/PD6xhxddlUESIwAV
 // @include         /^https?:\/\/10(\.[0-9]{1,3}){3}(:\d+)?\/.*$/
 // @include         http://192.168.*.*
@@ -24,9 +24,10 @@
 // @grant           unsafeWindow
 // @storageName     GBNPA_Storage
 // @source          https://github.com/ucxn/Bro-Stat
-// @website         https://github.com/ucxn/Bro-Stat
+// @website         https://www.bilibili.com/video/BV19ZpB64E6D
 // @supportURL      https://www.bilibili.com/video/BV1SeEb67Ep1
-// @license         LicenseRef-BR-BY-NC-1.0+ OR (SUL-1.0 AND BroTech Additional License+)
+// @copying         哥哥软件-显著署名-哥哥科技-严格 + （完整使用-署名保留-完全 OR (部分摘录-禁止演绎-署名保护-显著-哥哥科技 OR 二次开发-署名保留/保护-显著署名-署名哥哥-署名追加) AND 相同方式共享） 
+// @license         LicenseRef-BR-BY-NC-1.0+ OR (SUL-1.0 AND BroTech-Prominent-Attribution-Terms+) OR Adaptive Public License - Bro 0.1
 // @run-at          document-end
 // @updateURL       https://github.com/ucxn/Bro-Stat/raw/refs/heads/main/ZTE-ONU-E8-CMCC1.user.js
 // @downloadURL     https://raw.githubusercontent.com/ucxn/Bro-Stat/refs/heads/main/ZTE-ONU-E8-CMCC1.user.js
@@ -49,10 +50,10 @@
 
   // ======== [0] 用户极客环境变量配置区 ========
   const CONFIG = {
-    refreshInterval: 5,   // 【快组】无线终端速率（拓扑页）的轮询间隔（秒）。终端流量靠速率积分，周期越短越准；光猫性能弱，不建议低于 3
+    refreshInterval: 5,   // 【快组】无线终端速率（拓扑页）的轮询间隔（秒）。终端流量靠速率积分，周期越短越准；光猫性能不比路由器，不建议低于 3
     ponEvery: 3,          // 【外网】PON 计数器每 N 个快周期读一次（默认 3×5s=15s）。外网总量由累计字节求差，周期长短不影响总量，只让速率曲线变粗
     slowEvery: 6,         // 【慢组】LAN口 / Wi-Fi口 / 设备清单每 N 个快周期读一次（默认 6×5s=30s）
-    zeroGrace: 3,         // 计数器连续 N 次轮询无增长，才判定速率为 0（沿用小米引擎的取值）
+    zeroGrace: 3,         // 计数器连续 N 次轮询无增长，才判定速率为 0
     wanMinBytes: 1e8,     // 外网口选择：GEMPORT 累计收发总量达到 100MB 即锁定为外网口，之后不再切换
     ratioExtremeUp: 10,   // 极端上传判定阈值（上行/下行 > 1000%）
     ratioWarnUp: 0.12,    // 重度上传警告阈值（> 12%）
@@ -73,17 +74,19 @@
     for (let i = 0; i < b.length; i++) b[i] = parseInt(m.substr(i * 4 + 2, 2), 16);
     return u8.decode(b);
   });
-  const htmlNum = s => s.replace(/&#(\d+);/g, (_, d) => String.fromCharCode(+d));
-  const nM = m => String(m || '').toLowerCase();
-  const fBps = v => v >= 1e9 ? (v / 1e9).toFixed(2) + ' Gbps' : v >= 1e6 ? (v / 1e6).toFixed(2) + ' Mbps' : v >= 1e3 ? (v / 1e3).toFixed(1) + ' Kbps' : Math.round(v) + ' bps';
+  const htmlNum = s => s.indexOf('&#') < 0 ? s : s.replace(/&#(\d+);/g, (_, d) => String.fromCharCode(+d));
+  const nM = m => m ? String(m).toLowerCase() : '';
+  const fBps = v => v >= 1e6 && v < 1e9 ? (v / 1e6).toFixed(2) + ' Mbps' : v >= 1e3 && v < 1e6 ? (v / 1e3).toFixed(1) + ' Kbps' : !(v >= 1e3) ? Math.round(v) + ' bps' : (v / 1e9).toFixed(2) + ' Gbps';
   const fBy = bytes => {
-    const u = ['B', 'KiB', 'MiB', 'GiB', 'TiB']; let i = 0;
-    while (bytes >= 1024 && i < 4) { bytes /= 1024; i++; }
+  const u = ['B', 'KiB', 'MiB', 'GiB', 'TiB']; let i = 0;
+    if (bytes >= 1073741824 && bytes < 1099511627776) { bytes /= 1073741824; i = 3; }
+    else if (bytes >= 1048576 && bytes < 1073741824) { bytes /= 1048576; i = 2; }
+    else while (bytes >= 1024 && i < 4) { bytes /= 1024; i++; }
     return (i ? bytes.toFixed(bytes >= 100 ? 1 : 2) : Math.round(bytes)) + ' ' + u[i];
   };
   const fRate = bits => fBy(bits / 8) + '/s';
   const fVol = bits => fBy(bits / 8); // 内部统一用比特，展示成字节
-  function fSV(bits) { //要偷懒或者简洁易读，就完整一点，不要弄个挂MB实则1024又不正确、又高不成低不就的偷一半懒；GNU本身也支持这种单字母UI写法.
+  function fSV(bits) { //要偷懒或者简洁易读，就完整一点，不要弄个挂MB实则1024又不正确、又高不成低不就的偷一半懒.
     if (bits >= 84607500288) return `${(bits / 8589934592).toPrecision(4)}G`;
     if (bits > 8388608000) return `${Math.round(bits / 8388608)}M`;
     if (bits > 8388608) return `${(bits / 8388608).toPrecision(4)}M`;
@@ -176,7 +179,7 @@
     return { nodes, devs: devs.filter(x => x.mac) };
   }
 
-  // ======== [3] 求导与积分引擎（移植自小米 WAN 微分引擎） ========
+  // ======== [3] 微积分引擎========
   // 计数器求导：时间戳只在“计数器真的变化”时更新，速率＝增量／距上次变化的时间；
   // 连续 zeroGrace 次无增长才判零，判零后每次轮询都重置时间戳；回退按清零处理并重置基准。
   class Diff {
@@ -283,7 +286,7 @@
     // 官方每张页面都自带 305 秒的“页面超时”定时器（只在页面加载时启动，用户操作不会续期），到点就用表单 POST 注销到 /。
     // 面板全屏盖住官方页，用户不会去点它，5 分钟一到就会弹“页面超时”并带着早已作废的令牌提交，光猫回 400。
     // 采样期间每 200 秒替官方页调用一次它自己的续期函数 callbackfuncReset，让这个定时器永远走不到头
-    // （后台标签页定时器被降频到每分钟一次时，最长间隔约 260 秒，仍在 305 秒以内）
+    // （后台标签页定时器被降频到每分钟一次时，最长间隔约 260 秒，仍在 300 秒以内）
     if (Date.now() - (S.keepAt || 0) >= 200000) { document.getElementById('mainFrame')?.contentWindow?.callbackfuncReset?.(); S.keepAt = Date.now(); }
     try {
       const go = () => S.run && !S.cool; // 关面板或本轮已出错：剩下的页面一个都不再拉（每拉一页光猫都会换发令牌）
@@ -389,7 +392,7 @@
 #bro-ont-ov .zte-bar-up::before{content:'';position:absolute;left:0;top:0;bottom:0;z-index:-1;background:rgba(255,76,0,.12);width:var(--p-up,0%);transition:width .5s}
 #bro-ont-ov .zte-bar-down::before{content:'';position:absolute;left:0;top:0;bottom:0;z-index:-1;background:rgba(0,89,250,.12);width:var(--p-down,0%);transition:width .5s}`;
 
-  // —— 原生 Wi-Fi 信号图标（华为 / 锐捷同款分档与配色），光猫版缩到 34px ——
+  // —— 原生 Wi-Fi 信号图标 光猫版缩到 34px ——
   const 图标 = (inner) => `<svg viewBox="0 0 100 100" width="34" height="34">${inner}</svg>`;
   const 弧 = (c1, c2) => `<path d="M 30,58 A 28,28 0 0,1 70,58" fill="none" stroke="${c1}" stroke-width="7" stroke-linecap="round"/><path d="M 12,38 A 54,54 0 0,1 88,38" fill="none" stroke="${c2}" stroke-width="7" stroke-linecap="round"/>`;
   const getIconSvg = r => {
@@ -481,7 +484,7 @@
 <div class="geek-row"><span class="geek-label">终端：<span id="gege-pin-btn" class="gege-pin" title="冻结窗格">📌</span></span><div class="geek-val-box"><span class="c-up geek-fixed-width" id="gb-lan-up-vol"></span><span class="c-down geek-fixed-width" id="gb-lan-down-vol"></span><span style="font-weight:bold;margin-left:5px">WAN总计：<span class="c-up" id="gb-wan-up-vol"></span> | <span class="c-down" id="gb-wan-down-vol"></span></span></div><div class="geek-right-box">在线高精：<span style="color:#FF6700" id="gb-cur-up-vol"></span> | <span style="color:#18A058" id="gb-cur-down-vol"></span></div></div>
 <div class="geek-row"><span class="geek-label">高精流量统计 -></span><div class="geek-val-box"><span class="c-up geek-fixed-width" id="gb-int-up-vol"></span><span class="c-down geek-fixed-width" id="gb-int-down-vol"></span><span style="font-weight:normal;margin-left:5px;color:#666">终端/WAN：<span id="gb-ratio-display"></span></span></div><div class="geek-right-box" style="color:#666">当前总计：<span style="color:#FF6700" id="gb-abs-up-vol"></span> | <span style="color:#18A058" id="gb-abs-down-vol"></span></div></div>`;
 
-  // —— 频段命名：没有“5G”这个词。分组标题按主信道二分（≥149 为 5.8G），端口行按信道查表 ——
+  // —— 频段命名：没有“5GHz”这个词。分组标题按主信道二分（≥149 为 5.8G），端口行按信道查表 ——
   const 锐频段 = { 32: '5.1G', 36: '5.2G', 40: '5.2G', 44: '5.2G', 48: '5.2G', 52: '5.2G', 56: '5.3G', 60: '5.3G', 64: '5.3G', 100: '5.5G', 104: '5.5G', 108: '5.5G', 112: '5.5G', 116: '5.5G', 120: '5.6G', 124: '5.6G', 128: '5.6G', 132: '5.6G', 136: '5.6G', 140: '5.7G', 144: '5.7G', 149: '5.8G', 153: '5.8G', 157: '5.8G', 161: '5.8G', 165: '5.8G', 184: '4.9G', 188: '4.9G', 192: '4.9G', 196: '4.9G' };
   const 频段名 = k => k === '5G' ? (S.ch5 > 148 ? '5.8G' : '5.2G') : '2.4G';
   const 端口频段 = p => p.band === '5G' ? (锐频段[p.ch] || 频段名('5G')) : '2.4G';
@@ -500,7 +503,7 @@
 <section><h3>端口与 Wi-Fi（累计字节求导，慢组采样）</h3><div id="zo-ports"></div></section>
 <section><h3>其它在线设备（光猫侧不提供逐设备速率）</h3><div id="zo-other"></div></section>
 <div style="margin-top: 25px; padding-top: 15px; border-top: 1px dashed #eee; text-align: center; font-family: Consolas, 'Microsoft YaHei', sans-serif;"><div style="font-size: 11.5px; color: #777; font-style: italic; margin-bottom: 8px;">“在一个文明社会，干净的、不被监视与吸血的网络，是我们每个人的基本权利。”</div><div style="font-size: 10.5px; color: #999; line-height: 1.3; margin-bottom: 8px;">本交互式程序为“哥哥软件”范本；分享请使用官方链接，仅对尊重署名且持续保留者开放源代码，按“原样”免费提供，不对其适用性、稳定性、精密度或任何商业场景的合规性作任何担保。<a href="https://github.com/ucxn/ZTE-Stat_Max/blob/main/LICENSE.markdown" target="_blank" style="color: #777; text-decoration: underline;">分享/查看许可证</a><br>协议规定：基于本程序的任何修改均不得移除本界面的署名，也不得弱化“显示的程度”。保持显著GUI署名、原样保留程序中所有“哥哥科技”样式完全不变且轻松可见，是使用本软件代码的合法性的前置条件。
-        </div><div style="font-size:12px;color:#555;"><svg xmlns="http://www.w3.org/2000/svg" width="110" height="18" viewBox="0 0 122 20" role="img" aria-label="Broware BY NC" style="vertical-align:middle;margin-right:6px"><defs><linearGradient id="bg1" x2="0" y2="1"><stop stop-color="#4b4b4b"/><stop offset=".5" stop-color="#333"/><stop offset="1" stop-color="#1f1f1f"/></linearGradient><linearGradient id="bg2" x2="0" y2="1"><stop stop-color="#52d58c"/><stop offset=".52" stop-color="#31bc71"/><stop offset="1" stop-color="#218b50"/></linearGradient><linearGradient id="sh" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".32"/><stop offset=".45" stop-color="#fff" stop-opacity=".08"/><stop offset=".46" stop-opacity="0"/><stop offset="1" stop-opacity=".1"/></linearGradient><clipPath id="c"><rect width="122" height="20" rx="4"/></clipPath></defs><g clip-path="url(#c)"><path fill="url(#bg1)" d="M0 0h24v20H0z"/><path fill="url(#bg2)" d="M24 0h98v20H24z"/><path fill="url(#sh)" d="M0 0h122v20H0z"/></g><g transform="translate(4 2)"><rect width="15" height="15" rx=".6" fill="#fff"/><rect x="1" y="1" width="13" height="13" fill="#58d18d"/><path fill="#fff" d="M1 1h7v7z"/><path fill="#32bf70" d="M8 1h6v13H8z"/><path fill="#1ba856" d="M1 14h7V8l6 6z"/></g><g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11"><text x="73" y="15" fill="#000" fill-opacity=".28">Broware BY NC</text><text x="73" y="14">Broware BY NC</text></g></svg><a href="https://github.com/ucxn/Bro-Stat" target="_blank" style="color:#0059fa;text-decoration:none;font-weight:bold;">Bro-Stat 光猫版</a> <span title="构建时间：2026-10&#10;架构设计：哥哥科技 BroTech&#10;Bilibili UID：501430041&#10;QQ群：680464365" style="cursor:help; border-bottom:1px dotted #ccc; font-family:Consolas;">${esc(VER)}</span> | Copyright &copy; 2026 <a href="https://www.bilibili.com/video/BV1PtR7B8ECC" target="_blank" style="color: #0059fa; text-decoration: none; font-weight: bold;">哥哥科技</a> (BroTech)<span style="color: #888; font-weight: normal;"> | All Rights Reserved</span>&emsp;&nbsp;<a href="https://github.com/ucxn/Bro-Stat" target="_blank" style="color: #666; text-decoration: none;">点此分享</a></div></div></div></div>`;
+        </div><div style="font-size:12px;color:#555;"><svg xmlns="http://www.w3.org/2000/svg" width="110" height="18" viewBox="0 0 122 20" role="img" aria-label="Broware BY NC" style="vertical-align:middle;margin-right:6px"><defs><linearGradient id="bg1" x2="0" y2="1"><stop stop-color="#4b4b4b"/><stop offset=".5" stop-color="#333"/><stop offset="1" stop-color="#1f1f1f"/></linearGradient><linearGradient id="bg2" x2="0" y2="1"><stop stop-color="#52d58c"/><stop offset=".52" stop-color="#31bc71"/><stop offset="1" stop-color="#218b50"/></linearGradient><linearGradient id="sh" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".32"/><stop offset=".45" stop-color="#fff" stop-opacity=".08"/><stop offset=".46" stop-opacity="0"/><stop offset="1" stop-opacity=".1"/></linearGradient><clipPath id="c"><rect width="122" height="20" rx="4"/></clipPath></defs><g clip-path="url(#c)"><path fill="url(#bg1)" d="M0 0h24v20H0z"/><path fill="url(#bg2)" d="M24 0h98v20H24z"/><path fill="url(#sh)" d="M0 0h122v20H0z"/></g><g transform="translate(4 2)"><rect width="15" height="15" rx=".6" fill="#fff"/><rect x="1" y="1" width="13" height="13" fill="#58d18d"/><path fill="#fff" d="M1 1h7v7z"/><path fill="#32bf70" d="M8 1h6v13H8z"/><path fill="#1ba856" d="M1 14h7V8l6 6z"/></g><g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="11"><text x="73" y="15" fill="#000" fill-opacity=".28">Broware BY NC</text><text x="73" y="14">Broware BY NC</text></g></svg><a href="https://github.com/ucxn/Bro-Stat" target="_blank" style="color:#0059fa;text-decoration:none;font-weight:bold;">Bro-Stat 中兴光猫版1</a> <span title="构建时间：2026-10.14 21:17&#10;架构设计：哥哥科技 BroTech&#10;Bilibili UID：501430041&#10;QQ群：680464365" style="cursor:help; border-bottom:1px dotted #ccc; font-family:Consolas;">${esc(VER)}</span> | Copyright &copy; 2026 <a href="https://www.bilibili.com/video/BV1PtR7B8ECC" target="_blank" style="color: #0059fa; text-decoration: none; font-weight: bold;">哥哥科技</a> (BroTech)<span style="color: #888; font-weight: normal;"> | All Rights Reserved</span>&emsp;&nbsp;<a href="https://github.com/ucxn/Bro-Stat" target="_blank" style="color: #666; text-decoration: none;">点此分享</a></div></div></div></div>`;
     document.body.append(ball, ov);
     const pin = $('#gege-pin-btn', ov), board = $('#zte-geek-board', ov);
     pin.onclick = () => { S.isPinned = !S.isPinned; board.classList.toggle('geek-frozen-pane', S.isPinned); pin.classList.toggle('active', S.isPinned); };
