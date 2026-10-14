@@ -2,7 +2,7 @@
 // @name            中兴光猫增强 ZTE-ONT_Stat
 // @name:en         ZTE-ONT_Stat
 // @namespace       ucxn
-// @version         5.9.8.E
+// @version         5.9.9.E
 // @description     适用于中兴光猫（E8 / gch 老式界面）的网速与流量增强：外网速率由 PON 口累计字节求导，无线终端逐设备实时速率与积分，LAN口 / Wi-Fi 口流量对比
 // @description:en  Speed and traffic enhancement for ZTE ONU/ONT gateways (legacy E8/gch UI): WAN speed differentiated from PON byte counters, per-terminal Wi-Fi rate integration, LAN / Wi-Fi port traffic comparison.
 // @copyright       哥哥科技. All Rights Reserved. 使用必要条件之一：不得删除源码、用户界面、文本中的任何“哥哥”；传播官方链接不限；除安装自用外任何使用传输均需查看许可证。
@@ -36,6 +36,12 @@
   'use strict';
   const _w = typeof unsafeWindow !== 'undefined' ? unsafeWindow : window;
   if (window.top !== window.self || _w.__BRO_ONT__) return;
+  // 光猫的报错页（400 Bad Request / 403 Forbidden）是一次带着过期令牌的表单提交的回应：F5 只会原样重放那次提交，
+  // 地址栏回车（GET 重新进入）才能恢复。这里替用户按一次“回车”；15 秒内只做一次，避免真被拒时来回跳
+  if (/^(400 Bad Request|403 Forbidden)$/.test(document.title.trim()) && document.body && document.body.innerText.length < 400) {
+    let last = 0; try { last = +sessionStorage.getItem('bro-ont-heal') || 0; } catch {}
+    if (Date.now() - last > 15000) { try { sessionStorage.setItem('bro-ont-heal', Date.now()); } catch {} location.replace(location.href); return; }
+  }
   const isMain = /\/start\.ghtml/i.test(location.pathname); // 流氓匹配会进到登录页等其它页面；只有登录后的外壳页才采样
 
   const VER = (typeof GM_info !== 'undefined' && GM_info.script?.version) || '5.9.9.E';
@@ -53,6 +59,7 @@
     ratioExtremeDown: 0.01, // 极端下载判定阈值（< 1%）
     calcMode: 1,          // 终端比值条文案：1 上行/下行倍数模式，0 上行占总和比例模式
     ratioThreshold: 7,    // （仅 calcMode=0 时有效）上传占比报警阈值（%）
+    errorCooldown: 60,    // 任何一页读取失败（被拒、登录过期、页面不对），本轮立即收手，静候 N 秒后自动重试，不用手动刷新
     autoStart: false      // true：页面加载后自动开始采样；false：首次点开悬浮球才开始
   };
 
@@ -87,7 +94,6 @@
   // ======== [2] 取数与解析（光猫页面是 gb2312 的老式表格页） ========
   async function getPage(name) {
     const r = await fetch(`/getpage.gch?pid=1002&nextpage=${name}.gch`, { credentials: 'same-origin', cache: 'no-store' });
-    if (r.status === 403) S.forbidden = true; // 光猫明确拒绝：不再继续敲门，本轮结束即停
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const buf = await r.arrayBuffer(), n = performance.now(); // 以响应到达时刻为本页数据的时间
     return { t: gbk.decode(buf), n };
@@ -262,14 +268,20 @@
 
   // ======== [5] 调度 ========
   async function run(key, fn) {
-    try { await fn(); S.ok[key] = Date.now(); S.err[key] = null; S.fail[key] = 0; }
-    catch (e) { S.err[key] = e.message; S.fail[key] = (S.fail[key] || 0) + 1; console.warn(`[哥哥科技 光猫版] ${key} 失败:`, e.message); }
+    try { await fn(); S.ok[key] = Date.now(); S.err[key] = null; }
+    catch (e) { S.err[key] = e.message; S.cool = true; console.warn(`[哥哥科技 光猫版] ${key} 失败，${CONFIG.errorCooldown}s 后重试:`, e.message); }
+  }
+  // 积分结清：停采样、进入冷却时调用，下次从零速率起步，不把空档期当成匀速积进去
+  function settle() {
+    const n = performance.now();
+    S.wanIntU.close(n); S.wanIntD.close(n);
+    for (const d of S.devs.values()) { d.iu.close(n); d.id.close(n); }
   }
   async function cycle() {
     if (!S.run || S.busy) return;
-    S.busy = true; const t0 = performance.now();
+    S.busy = true; S.cool = false; S.coolUntil = 0; const t0 = performance.now();
     try {
-      const go = () => S.run && !S.forbidden; // 关面板或被拒后，本轮剩下的页面一个都不再拉（每拉一页光猫都会换发令牌）
+      const go = () => S.run && !S.cool; // 关面板或本轮已出错：剩下的页面一个都不再拉（每拉一页光猫都会换发令牌）
       await run('topo', async () => { const { t, n } = await getPage('topo_t'); ingestTopo(parseTopo(t), n); });
       if (go() && S.tick % CONFIG.ponEvery === 0) await run('pon', async () => { const { t, n } = await getPage('pon_status_stat_info_t'); ingestPon(parsePon(t), n); });
       if (go() && S.tick % CONFIG.slowEvery === 0) {
@@ -279,20 +291,18 @@
     } finally {
       S.tick++; S.busy = false;
       if (S.reloadOfficial) reloadOfficial(); // 关面板时这一轮还在路上：等最后一页拉完再重载官方页，否则它刚拿到的令牌又会被这一页作废
-      if (S.forbidden || ((S.fail.pon || 0) >= 5 && (S.fail.topo || 0) >= 5)) { S.run = false; S.paused = true; }
+      if (S.cool) { settle(); S.coolUntil = Date.now() + CONFIG.errorCooldown * 1000; }
       render();
-      // 按周期起点对齐，但无论光猫多慢，两轮之间至少留出半个周期的空闲，不让请求首尾相接
-      if (S.run) setTimeout(cycle, Math.max(CONFIG.refreshInterval * 500, CONFIG.refreshInterval * 1000 - (performance.now() - t0)));
+      // 正常：按周期起点对齐，且两轮之间至少留出半个周期的空闲；出错：静候 errorCooldown 秒
+      if (S.run) S.timer = setTimeout(cycle, S.cool ? CONFIG.errorCooldown * 1000 : Math.max(CONFIG.refreshInterval * 500, CONFIG.refreshInterval * 1000 - (performance.now() - t0)));
     }
   }
-  function start() { if (S.run) return; S.run = true; S.paused = S.forbidden = false; S.fail = {}; cycle(); }
+  function start() { if (S.run) return; S.run = true; clearTimeout(S.timer); S.cool = false; cycle(); } // 重新打开面板＝立即重试，不必等冷却结束
   // 只在面板打开时采样。关面板即停：光猫每渲染一页就换发一次 _SESSION_TOKEN，后台持续轮询会让用户正在看的官方页面手里的令牌过期，
   // 官方页面的提交（IF_ENCODE 也以该令牌为密钥）就会被拒。停采样时把积分结清，下次打开从零速率起步，不把关闭期间当成匀速积进去
   function stop() {
     if (!S.run) return;
-    S.run = false; const n = performance.now();
-    S.wanIntU.close(n); S.wanIntD.close(n);
-    for (const d of S.devs.values()) { d.iu.close(n); d.id.close(n); }
+    S.run = false; clearTimeout(S.timer); settle();
     if (S.busy) S.reloadOfficial = true; else reloadOfficial();
   }
   function reloadOfficial() { // 官方内容页重新加载一次，拿到当前有效的令牌（顶栏 top.gch 不带令牌，不用管）
@@ -500,8 +510,8 @@
 
   function updateBall() {
     const b = $('#bro-ont-ball'); if (!b) return;
-    b.dataset.s = !isMain ? 'off' : S.paused ? 'bad' : 'ok';
-    b.title = '哥哥科技 光猫监控' + (!isMain ? '（当前页面不是光猫主界面）' : S.paused ? '（已暂停，请点开查看）' : '');
+    b.dataset.s = !isMain ? 'off' : S.cool ? 'bad' : 'ok';
+    b.title = '哥哥科技 光猫监控' + (!isMain ? '（当前页面不是光猫主界面）' : S.cool ? '（上次读取失败，冷却后自动重试）' : '');
   }
 
   function renderBoard(bd, dv) {
@@ -602,15 +612,14 @@
         + '<div>• 若以上都对不上号，请联系开发者，并使用<b>视频</b>的方式进行协助。</div></div>';
       return;
     }
-    $('#zo-st').textContent = S.paused ? `已停止 · 轮次 ${S.tick}` : `终端 ${CONFIG.refreshInterval}s · 外网 ${CONFIG.refreshInterval * CONFIG.ponEvery}s · 轮次 ${S.tick}`;
+    $('#zo-st').textContent = S.cool ? `冷却中 · 轮次 ${S.tick}` : `终端 ${CONFIG.refreshInterval}s · 外网 ${CONFIG.refreshInterval * CONFIG.ponEvery}s · 轮次 ${S.tick}`;
     const ago = k => { const a = (Date.now() - S.ok[k]) / 1000; return a < 90 ? Math.round(a) + 's前' : Math.round(a / 60) + 'min前'; };
     const strip = [['pon', '外网'], ['topo', '终端'], ['lan', 'LAN口'], ['wlan', 'Wi-Fi口']].map(([k, n]) =>
       S.err[k] ? `<span class="no" title="${esc(S.err[k])}">✗ ${n}：${esc(S.err[k])}</span>` : S.ok[k] ? `<span class="ok">✓ ${n} ${ago(k)}</span>` : `<span>… ${n}</span>`).join('');
-    $('#zo-alert').innerHTML = (!S.paused ? '' : S.forbidden
-      ? '<div class="alert">⛔ 光猫拒绝了请求（HTTP 403 Forbidden），采样已立即停止，不会继续请求。请关闭面板、刷新页面并重新登录光猫后再打开；如果一打开就再次出现，请联系开发者，并附上 F12 → 网络（Network）里那条 403 请求的截图。</div>'
-      : '<div class="alert">⛔ 已暂停：外网与拓扑连续 5 次读取失败，通常是登录已过期。请刷新页面重新登录光猫后再打开面板；仍失败请联系开发者（带 F12 抓包）。</div>')
+    $('#zo-alert').innerHTML = (S.cool ? `<div class="alert">⏸ 光猫这一轮没有正常返回数据（见下方 ✗ 项），已立即收手，<span id="zo-cd"></span>秒后自动重试，期间不会再发任何请求。偶发一次不用管；如果每次都失败，通常是登录已过期，刷新页面重新登录即可。</div>` : '')
       + `<div class="strip">${strip}</div>`;
-    bd.classList.toggle('stale', !!S.paused); // 暂停后数据停留在最后一次成功采样，变灰提示
+    bd.classList.toggle('stale', !!S.cool); // 冷却期间数据停留在最后一次成功采样，变灰提示
+    clearTimeout(S.cdT); if (S.cool) { const cd = () => { const e = $('#zo-cd'); if (!e) return; e.textContent = Math.max(0, Math.ceil((S.coolUntil - Date.now()) / 1000)); S.cdT = setTimeout(cd, 1000); }; cd(); }
     const dv = [...S.devs.values()];
     renderBoard($('#zte-geek-board'), dv);
     // 节点
