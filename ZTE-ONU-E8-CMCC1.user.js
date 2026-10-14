@@ -282,8 +282,9 @@
     S.busy = true; S.cool = false; S.coolUntil = 0; const t0 = performance.now();
     // 官方每张页面都自带 305 秒的“页面超时”定时器（只在页面加载时启动，用户操作不会续期），到点就用表单 POST 注销到 /。
     // 面板全屏盖住官方页，用户不会去点它，5 分钟一到就会弹“页面超时”并带着早已作废的令牌提交，光猫回 400。
-    // 采样期间每轮替官方页调用它自己的续期函数 callbackfuncReset，让这个定时器永远走不到头
-    document.getElementById('mainFrame')?.contentWindow?.callbackfuncReset?.();
+    // 采样期间每 200 秒替官方页调用一次它自己的续期函数 callbackfuncReset，让这个定时器永远走不到头
+    // （后台标签页定时器被降频到每分钟一次时，最长间隔约 260 秒，仍在 305 秒以内）
+    if (Date.now() - (S.keepAt || 0) >= 200000) { document.getElementById('mainFrame')?.contentWindow?.callbackfuncReset?.(); S.keepAt = Date.now(); }
     try {
       const go = () => S.run && !S.cool; // 关面板或本轮已出错：剩下的页面一个都不再拉（每拉一页光猫都会换发令牌）
       await run('topo', async () => { const { t, n } = await getPage('topo_t'); ingestTopo(parseTopo(t), n); });
@@ -310,7 +311,7 @@
     if (S.busy) S.reloadOfficial = true; else reloadOfficial();
   }
   function reloadOfficial() { // 官方内容页重新加载一次，拿到当前有效的令牌（顶栏 top.gch 不带令牌，不用管）
-    S.reloadOfficial = false;
+    S.reloadOfficial = false; S.keepAt = 0; // 重载后是新页面、新定时器，下次打开面板第一轮就续期
     const f = document.getElementById('mainFrame');
     if (f?.contentWindow) f.contentWindow.location.href = f.contentWindow.location.href;
   }
