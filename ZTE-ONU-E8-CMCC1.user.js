@@ -280,6 +280,10 @@
   async function cycle() {
     if (!S.run || S.busy) return;
     S.busy = true; S.cool = false; S.coolUntil = 0; const t0 = performance.now();
+    // 官方每张页面都自带 305 秒的“页面超时”定时器（只在页面加载时启动，用户操作不会续期），到点就用表单 POST 注销到 /。
+    // 面板全屏盖住官方页，用户不会去点它，5 分钟一到就会弹“页面超时”并带着早已作废的令牌提交，光猫回 400。
+    // 采样期间每轮替官方页调用它自己的续期函数 callbackfuncReset，让这个定时器永远走不到头
+    document.getElementById('mainFrame')?.contentWindow?.callbackfuncReset?.();
     try {
       const go = () => S.run && !S.cool; // 关面板或本轮已出错：剩下的页面一个都不再拉（每拉一页光猫都会换发令牌）
       await run('topo', async () => { const { t, n } = await getPage('topo_t'); ingestTopo(parseTopo(t), n); });
