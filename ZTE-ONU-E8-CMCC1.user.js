@@ -2,7 +2,7 @@
 // @name            中兴光猫增强 ZTE-ONT_Stat
 // @name:en         ZTE-ONT_Stat
 // @namespace       ucxn
-// @version         5.9.9.E
+// @version         5.9.8.E
 // @description     适用于中兴光猫（E8 / gch 老式界面）的网速与流量增强：外网速率由 PON 口累计字节求导，无线终端逐设备实时速率与积分，LAN口 / Wi-Fi 口流量对比
 // @description:en  Speed and traffic enhancement for ZTE ONU/ONT gateways (legacy E8/gch UI): WAN speed differentiated from PON byte counters, per-terminal Wi-Fi rate integration, LAN / Wi-Fi port traffic comparison.
 // @copyright       哥哥科技. All Rights Reserved. 使用必要条件之一：不得删除源码、用户界面、文本中的任何“哥哥”；传播官方链接不限；除安装自用外任何使用传输均需查看许可证。
@@ -43,8 +43,8 @@
 
   // ======== [0] 用户极客环境变量配置区 ========
   const CONFIG = {
-    refreshInterval: 5,   // 【快组】外网（PON）计数器的轮询间隔（秒）。光猫性能弱，不建议低于 3
-    topoEvery: 3,         // 【拓扑】无线终端速率每 N 个快周期读一次（默认 3×5s=15s）。终端速率是光猫算好的瞬时值，拉长只让积分与火花线变粗
+    refreshInterval: 5,   // 【快组】无线终端速率（拓扑页）的轮询间隔（秒）。终端流量靠速率积分，周期越短越准；光猫性能弱，不建议低于 3
+    ponEvery: 3,          // 【外网】PON 计数器每 N 个快周期读一次（默认 3×5s=15s）。外网总量由累计字节求差，周期长短不影响总量，只让速率曲线变粗
     slowEvery: 6,         // 【慢组】LAN口 / Wi-Fi口 / 设备清单每 N 个快周期读一次（默认 6×5s=30s）
     zeroGrace: 3,         // 计数器连续 N 次轮询无增长，才判定速率为 0（沿用小米引擎的取值）
     wanMinBytes: 1e8,     // 外网口选择：GEMPORT 累计收发总量达到 100MB 即锁定为外网口，之后不再切换
@@ -207,7 +207,7 @@
   // ======== [4] 状态与入库 ========
   const S = {
     run: false, busy: false, tick: 0, ok: {}, err: {}, fail: {},
-    gem: {}, lock: null, wanName: '', wanUp: 0, wanDn: 0, wanIntU: new Integ(), wanIntD: new Integ(), wanRawU: 0, wanRawD: 0,
+    gem: {}, lock: null, wanName: '', wanUp: 0, wanDn: 0, wanIntU: new Integ(CONFIG.refreshInterval * CONFIG.ponEvery), wanIntD: new Integ(CONFIG.refreshInterval * CONFIG.ponEvery), wanRawU: 0, wanRawD: 0,
     devs: new Map(), nodes: [], list: [], lanP: {}, wlanP: {}, lanInfo: [], wlanInfo: [],
     topoN: 0, ch24: 6, ch5: 60, 衰减: 0, isPinned: false,
     总上行图: new Float64Array(8192), 总下行图: new Float64Array(8192), 总图点数: 0, wMaxU: 0, wMaxD: 0, wMinU: Infinity, wMinD: Infinity
@@ -239,7 +239,7 @@
     const seen = new Set();
     for (const x of r.devs) {
       seen.add(x.mac);
-      const d = S.devs.get(x.mac) ?? { mac: x.mac, iu: new Integ(CONFIG.refreshInterval * CONFIG.topoEvery), id: new Integ(CONFIG.refreshInterval * CONFIG.topoEvery), hU: new Float64Array(32), hD: new Float64Array(32), hIdx: 0 };
+      const d = S.devs.get(x.mac) ?? { mac: x.mac, iu: new Integ(), id: new Integ(), hU: new Float64Array(32), hD: new Float64Array(32), hIdx: 0 };
       Object.assign(d, { name: x.name, ip: x.ip, owner: x.owner, access: x.access, assoc: x.assoc, rssi: x.rssi, mode: x.mode, phyTx: x.phyTx, phyRx: x.phyRx, up: x.up, dn: x.dn, online: true });
       d.iu.feed(x.up, n); d.id.feed(x.dn, n);
       S.devs.set(x.mac, d);
@@ -269,14 +269,16 @@
     if (!S.run || S.busy) return;
     S.busy = true; const t0 = performance.now();
     try {
-      await run('pon', async () => { const { t, n } = await getPage('pon_status_stat_info_t'); ingestPon(parsePon(t), n); });
-      if (!S.forbidden && S.tick % CONFIG.topoEvery === 0) await run('topo', async () => { const { t, n } = await getPage('topo_t'); ingestTopo(parseTopo(t), n); });
-      if (!S.forbidden && S.tick % CONFIG.slowEvery === 0) {
+      const go = () => S.run && !S.forbidden; // 关面板或被拒后，本轮剩下的页面一个都不再拉（每拉一页光猫都会换发令牌）
+      await run('topo', async () => { const { t, n } = await getPage('topo_t'); ingestTopo(parseTopo(t), n); });
+      if (go() && S.tick % CONFIG.ponEvery === 0) await run('pon', async () => { const { t, n } = await getPage('pon_status_stat_info_t'); ingestPon(parsePon(t), n); });
+      if (go() && S.tick % CONFIG.slowEvery === 0) {
         await run('lan', async () => { const { t, n } = await getPage('status_lan_info_t'); ingestLan(parseLan(t), n); });
-        if (!S.forbidden) await run('wlan', async () => { const { t, n } = await getPage('e8_status_wlan_info_t'); ingestWlan(parseWlan(t), n); });
+        if (go()) await run('wlan', async () => { const { t, n } = await getPage('e8_status_wlan_info_t'); ingestWlan(parseWlan(t), n); });
       }
     } finally {
       S.tick++; S.busy = false;
+      if (S.reloadOfficial) reloadOfficial(); // 关面板时这一轮还在路上：等最后一页拉完再重载官方页，否则它刚拿到的令牌又会被这一页作废
       if (S.forbidden || ((S.fail.pon || 0) >= 5 && (S.fail.topo || 0) >= 5)) { S.run = false; S.paused = true; }
       render();
       // 按周期起点对齐，但无论光猫多慢，两轮之间至少留出半个周期的空闲，不让请求首尾相接
@@ -291,7 +293,11 @@
     S.run = false; const n = performance.now();
     S.wanIntU.close(n); S.wanIntD.close(n);
     for (const d of S.devs.values()) { d.iu.close(n); d.id.close(n); }
-    const f = document.getElementById('mainFrame'); // 官方内容页重新加载一次，拿到当前有效的令牌
+    if (S.busy) S.reloadOfficial = true; else reloadOfficial();
+  }
+  function reloadOfficial() { // 官方内容页重新加载一次，拿到当前有效的令牌（顶栏 top.gch 不带令牌，不用管）
+    S.reloadOfficial = false;
+    const f = document.getElementById('mainFrame');
     if (f?.contentWindow) f.contentWindow.location.href = f.contentWindow.location.href;
   }
 
@@ -386,7 +392,7 @@
     return 图标(`<g transform="translate(-15, 0)"><circle cx="50" cy="80" r="7" fill="none" stroke="#ff4c00" stroke-width="5"/><path d="M 30,58 A 28,28 0 0,1 70,58" fill="none" stroke="#ff4c00" stroke-width="7" stroke-linecap="round" opacity="0.3"/><path d="M 12,38 A 54,54 0 0,1 88,38" fill="none" stroke="#ff4c00" stroke-width="7" stroke-linecap="round" opacity="0.3"/></g><text x="65" y="80" fill="#ff4c00" font-weight="900" font-size="35" font-family="sans-serif">✖</text>`);
   };
 
-  // —— 原生字符火花线：16 格，每格一次拓扑采样（默认 15s，整条约 4 分钟） ——
+  // —— 原生字符火花线：16 格，每格一次拓扑采样（默认 5s，整条 80 秒） ——
   const SPRK = [' ', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
   function getSpark(ringArr, headIdx, maxVal) {
     let s = '';
@@ -429,7 +435,7 @@
     for (let i = 7; i--;) { const xx = l + gw * i / 6; x.beginPath(); x.moveTo(xx, t); x.lineTo(xx, H - b); x.stroke(); }
     x.setLineDash([]);
     const li = (S.总图点数 - 1) & 8191, au = n ? su / n : 0, ad = n ? sd / n : 0;
-    (box._gcMeta ??= box.querySelector('[data-gc="meta"]')).textContent = `采样:${CONFIG.refreshInterval}s  点:${S.总图点数}`;
+    (box._gcMeta ??= box.querySelector('[data-gc="meta"]')).textContent = `采样:${CONFIG.refreshInterval * CONFIG.ponEvery}s  点:${S.总图点数}`;
     const rg = box._gcRange ??= box.querySelector('[data-gc="range"]'), rs = `峰↑${fRate(S.wMaxU)} ↓${fRate(S.wMaxD)}  谷↑${S.wMinU < Infinity ? fRate(S.wMinU) : '--'} ↓${S.wMinD < Infinity ? fRate(S.wMinD) : '--'}`; rg.textContent = rs; rg.title = rs;
     (box._gcUp ??= box.querySelector('[data-gc="up"]')).textContent = `发 ${fRate(n ? S.总上行图[li] : 0)}`;
     (box._gcDown ??= box.querySelector('[data-gc="down"]')).textContent = `收 ${fRate(n ? S.总下行图[li] : 0)}`;
@@ -596,7 +602,7 @@
         + '<div>• 若以上都对不上号，请联系开发者，并使用<b>视频</b>的方式进行协助。</div></div>';
       return;
     }
-    $('#zo-st').textContent = S.paused ? `已停止 · 轮次 ${S.tick}` : `采样 ${CONFIG.refreshInterval}s · 轮次 ${S.tick}`;
+    $('#zo-st').textContent = S.paused ? `已停止 · 轮次 ${S.tick}` : `终端 ${CONFIG.refreshInterval}s · 外网 ${CONFIG.refreshInterval * CONFIG.ponEvery}s · 轮次 ${S.tick}`;
     const ago = k => { const a = (Date.now() - S.ok[k]) / 1000; return a < 90 ? Math.round(a) + 's前' : Math.round(a / 60) + 'min前'; };
     const strip = [['pon', '外网'], ['topo', '终端'], ['lan', 'LAN口'], ['wlan', 'Wi-Fi口']].map(([k, n]) =>
       S.err[k] ? `<span class="no" title="${esc(S.err[k])}">✗ ${n}：${esc(S.err[k])}</span>` : S.ok[k] ? `<span class="ok">✓ ${n} ${ago(k)}</span>` : `<span>… ${n}</span>`).join('');
